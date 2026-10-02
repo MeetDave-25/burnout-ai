@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /api/
+Disallow: /me
+Disallow: /account
+Disallow: /check-in
+Disallow: /org
+Allow: /

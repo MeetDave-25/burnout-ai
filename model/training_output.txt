@@ -1,0 +1,57 @@
+﻿=================================================================
+  BurnoutAI ΓÇö Model Training Pipeline
+  Based on Burnout Research Papers (2024)
+=================================================================
+
+[1/6] Loading dataset...
+      Loaded 6000 rows, 14 columns
+      Features : 12
+      Classes  : [np.int64(0), np.int64(1), np.int64(2), np.int64(3)] -> {0: np.int64(1500), 1: np.int64(1596), 2: np.int64(1230), 3: np.int64(1674)}
+
+[2/6] Splitting data (80% train / 20% test)...
+      Train size : 4800
+      Test size  : 1200
+
+[3/6] Training models...
+      Random Forest             | CV F1: 0.8198 ┬▒ 0.0075 | Test Acc: 0.8042
+      Gradient Boosting         | CV F1: 0.7999 ┬▒ 0.0055 | Test Acc: 0.7875
+      Logistic Regression       | CV F1: 0.7890 ┬▒ 0.0080 | Test Acc: 0.7850
+
+[4/6] Selecting best model...
+      Best model : Random Forest
+      Test Acc   : 0.8042 (80.4%)
+      Test F1    : 0.7935
+
+[5/6] Computing feature importance...
+
+      Top Feature Importances:
+      motivation_level               ΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûê 0.2130
+      exhaustion_score               ΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûê 0.1745
+      cynicism_score                 ΓûêΓûêΓûêΓûêΓûêΓûê 0.1340
+      efficacy_score                 ΓûêΓûêΓûêΓûêΓûêΓûê 0.1280
+      can_disconnect                 ΓûêΓûêΓûêΓûê 0.0927
+      support_from_manager           ΓûêΓûêΓûê 0.0738
+      avg_hours_per_day              ΓûêΓûêΓûê 0.0660
+      leave_days_last_month          Γûê 0.0383
+      late_logins_per_week           Γûê 0.0366
+      meetings_per_day               Γûê 0.0338
+      role_type_enc                   0.0056
+      remote_work                     0.0037
+
+[6/6] Saving model artifacts...
+      burnout_model.pkl   Γ£ô
+      scaler.pkl          Γ£ô
+      label_encoder.pkl   Γ£ô
+      model_metadata.json Γ£ô
+      model_report.txt    Γ£ô
+      model_plots.png     Γ£ô
+
+=================================================================
+  Γ£à  Training Complete!
+  Model Accuracy : 80.4%
+  Model F1 Score : 79.4%
+  Best Model     : Random Forest
+=================================================================
+
+  Next step: Run  ΓåÆ  python ../api/app.py
+

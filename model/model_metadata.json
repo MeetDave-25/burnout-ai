@@ -1,0 +1,49 @@
+{
+  "model_name": "Random Forest",
+  "test_accuracy": 0.8042,
+  "test_f1": 0.7935,
+  "cv_f1_mean": 0.8198,
+  "cv_f1_std": 0.0075,
+  "features": [
+    "avg_hours_per_day",
+    "late_logins_per_week",
+    "meetings_per_day",
+    "leave_days_last_month",
+    "exhaustion_score",
+    "cynicism_score",
+    "efficacy_score",
+    "motivation_level",
+    "support_from_manager",
+    "can_disconnect",
+    "role_type_enc",
+    "remote_work"
+  ],
+  "classes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "class_labels": {
+    "0": "Healthy",
+    "1": "Moderate Risk",
+    "2": "High Risk",
+    "3": "Burnout Zone"
+  },
+  "training_samples": 4800,
+  "test_samples": 1200,
+  "feature_importance": {
+    "motivation_level": 0.212971,
+    "exhaustion_score": 0.174463,
+    "cynicism_score": 0.134029,
+    "efficacy_score": 0.128047,
+    "can_disconnect": 0.092679,
+    "support_from_manager": 0.073806,
+    "avg_hours_per_day": 0.065983,
+    "leave_days_last_month": 0.038293,
+    "late_logins_per_week": 0.036598,
+    "meetings_per_day": 0.033824,
+    "role_type_enc": 0.005574,
+    "remote_work": 0.003734
+  }
+}

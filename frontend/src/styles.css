@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+/* ── Design tokens: brutalist ────────────────────────────────────
+   Paper, ink, hard 2px rules, one hot accent. Heat (orange) = pushing burnout up,
+   cool (cobalt) = protecting you. Text on --heat is always ink (5.8:1), never white. */
+:root {
+  color-scheme: light;
+  --bg: #ece9e2;
+  --surface: #f4f2ec;
+  --surface-2: #dfdbd2;
+  --ink: #0b0b0b;
+  --ink-2: #34322e;
+  --ink-3: #5f5b54;
+  --line: #0b0b0b;
+  --grid: #d3cfc6;
+
+  --heat: #ff4a00;
+  --heat-wash: #ff4a0026;
+  --cool: #1f3bff;
+  --cool-wash: #1f3bff1f;
+  --mid: #cfcac0;
+
+  --good: #0ca30c;
+  --warning: #fab219;
+  --critical: #d03b3b;
+
+  --cat-1: #2a78d6;
+  --cat-2: #eb6834;
+  --cat-3: #1baf7a;
+
+  /* fixed brand colours (same in both themes) */
+  --paper: #ece9e2;
+  --hot: #ff4a00;
+  --concrete: #b9b4aa;
+  --nav-h: 56px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --bg: #0b0b0b;
+    --surface: #141414;
+    --surface-2: #1e1e1e;
+    --ink: #ece9e2;
+    --ink-2: #c4c0b8;
+    --ink-3: #8f8b84;
+    --line: #ece9e2;
+    --grid: #262626;
+    --heat: #ff5a14;
+    --heat-wash: #ff5a1430;
+    --cool: #7b8fff;
+    --cool-wash: #7b8fff26;
+    --mid: #3a3a3a;
+    --critical: #e04848;
+    --cat-1: #3987e5;
+    --cat-2: #d95926;
+    --cat-3: #199e70;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b0b0b;
+  --surface: #141414;
+  --surface-2: #1e1e1e;
+  --ink: #ece9e2;
+  --ink-2: #c4c0b8;
+  --ink-3: #8f8b84;
+  --line: #ece9e2;
+  --grid: #262626;
+  --heat: #ff5a14;
+  --heat-wash: #ff5a1430;
+  --cool: #7b8fff;
+  --cool-wash: #7b8fff26;
+  --mid: #3a3a3a;
+  --critical: #e04848;
+  --cat-1: #3987e5;
+  --cat-2: #d95926;
+  --cat-3: #199e70;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-heat: var(--heat);
+  --color-cool: var(--cool);
+  --color-paper: var(--paper);
+  --color-hot: var(--hot);
+  --color-concrete: var(--concrete);
+  --font-sans: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Anton", "Archivo", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+}
+
+html, body, #root { min-height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection { background: var(--hot); color: #0b0b0b; }
+
+:focus-visible { outline: 3px solid var(--heat); outline-offset: 2px; }
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* ── Type ───────────────────────────────────────────────────────── */
+.b-display { font-family: var(--font-display); text-transform: uppercase; letter-spacing: -0.005em; font-weight: 400; }
+.b-mono, .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
+.eyebrow { color: var(--ink-3); }
+
+/* ── Surfaces ───────────────────────────────────────────────────── */
+.card { background: var(--surface); border: 2px solid var(--line); }
+.brutal { background: var(--bg); color: var(--ink); }
+.shadow-hard { box-shadow: 6px 6px 0 0 var(--line); }
+
+.brutal-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px);
+  background-size: calc(100% / 12) 100%, 100% 96px;
+}
+.brutal-grid-dark {
+  background-image:
+    linear-gradient(to right, rgb(236 233 226 / .07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(236 233 226 / .07) 1px, transparent 1px);
+  background-size: calc(100% / 12) 100%, 100% 96px;
+}
+
+.hazard { background: repeating-linear-gradient(-45deg, #0b0b0b 0 12px, var(--hot) 12px 24px); }
+.hazard-live { animation: hazard-slide 0.6s linear infinite; background-size: 34px 34px; }
+@keyframes hazard-slide { to { background-position: 34px 0; } }
+.hazard-cool { background: repeating-linear-gradient(-45deg, var(--ink) 0 3px, transparent 3px 8px); }
+
+/* ── Controls ───────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
+  border: 2px solid var(--line); padding: .85rem 1.4rem;
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+  background: var(--surface); color: var(--ink);
+  transition: transform .12s, box-shadow .12s, background .12s, color .12s;
+}
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 0 var(--line); }
+.btn:active { transform: translate(0, 0); box-shadow: none; }
+.btn:disabled { opacity: .5; pointer-events: none; }
+.btn-hot { background: var(--hot); color: #0b0b0b; border-color: #0b0b0b; }
+.btn-ink { background: var(--ink); color: var(--bg); }
+
+.field {
+  width: 100%; border: 2px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: .8rem 1rem; font: inherit; font-size: 16px; outline: none;
+}
+.field:focus { box-shadow: 4px 4px 0 0 var(--heat); }
+
+input[type="range"].plain-range {
+  appearance: none; width: 100%; height: 28px; background: transparent; cursor: pointer;
+}
+input[type="range"].plain-range::-webkit-slider-runnable-track { height: 6px; background: var(--ink); }
+input[type="range"].plain-range::-moz-range-track { height: 6px; background: var(--ink); }
+input[type="range"].plain-range::-webkit-slider-thumb {
+  appearance: none; width: 22px; height: 22px; margin-top: -8px;
+  background: var(--hot); border: 2px solid #0b0b0b;
+}
+input[type="range"].plain-range::-moz-range-thumb { width: 18px; height: 18px; border-radius: 0; background: var(--hot); border: 2px solid #0b0b0b; }
+
+/* ── Landing story ──────────────────────────────────────────────── */
+.road-dashes { background: repeating-linear-gradient(90deg, var(--paper) 0 60px, transparent 60px 120px); }
+
+.marquee { animation: marquee 28s linear infinite; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+@keyframes strain {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(-1.5px) rotate(-0.25deg); }
+  75% { transform: translateX(1.5px) rotate(0.25deg); }
+}
+.strain > * { animation: strain 0.35s ease-in-out infinite; }
+
+/* zipper: interlocking metal teeth */
+.zip-seam {
+  background:
+    repeating-linear-gradient(to bottom, #d8d2c6 0 5px, #6f6a62 5px 6px, transparent 6px 12px) left / 50% 100% no-repeat,
+    repeating-linear-gradient(to bottom, transparent 0 6px, #d8d2c6 6px 11px, #6f6a62 11px 12px) right / 50% 100% no-repeat;
+}
+.zip-teeth { background: repeating-linear-gradient(to bottom, #d8d2c6 0 5px, #6f6a62 5px 6px, transparent 6px 12px); }
+.zip-teeth-r { background: repeating-linear-gradient(to bottom, transparent 0 6px, #d8d2c6 6px 11px, #6f6a62 11px 12px); }
+
+/* The landing story is designed on paper; it stays light in dark mode. */
+.story-light {
+  --bg: #ece9e2; --surface: #f4f2ec; --surface-2: #dfdbd2; --ink: #0b0b0b; --ink-2: #34322e; --ink-3: #5f5b54;
+  --line: #0b0b0b; --heat: #ff4a00; --cool: #1f3bff;
+  background: var(--bg); color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  .marquee, .hazard-live, .strain > * { animation: none; }
+}

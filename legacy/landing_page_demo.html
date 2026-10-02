@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landing Reveal - Meet Dave</title>
+    <!-- Modern cinematic font -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030305;
+            --text-color: #ffffff;
+            --accent-glow: rgba(255, 255, 255, 0.4);
+            --line-color: #d4af37; /* A subtle premium gold accent for the line */
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .reveal-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* --- BACKGROUND AESTHETICS --- */
+        .bg-gradient {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 70%);
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .content-layer {
+            z-index: 10;
+        }
+
+        /* --- TEXT ANIMATION --- */
+        .text-reveal {
+            position: absolute;
+            font-size: 3.5rem;
+            font-weight: 300;
+            letter-spacing: 0.6em;
+            text-transform: uppercase;
+            display: flex;
+            opacity: 1;
+            /* Fades out text after it has been fully revealed */
+            animation: fadeOutText 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation-delay: 4.5s; 
+            margin-right: -0.6em; /* Compensate for letter spacing on last letter to keep it centered */
+        }
+
+        .text-reveal span {
+            opacity: 0;
+            display: inline-block;
+            transform: scale(1.1) translateZ(0);
+            filter: blur(10px);
+            animation: revealLetter 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        /* Cinematic staggering for "MEET DAVE" */
+        .text-reveal span:nth-child(1) { animation-delay: 0.4s; }
+        .text-reveal span:nth-child(2) { animation-delay: 0.6s; }
+        .text-reveal span:nth-child(3) { animation-delay: 0.8s; }
+        .text-reveal span:nth-child(4) { animation-delay: 1.0s; }
+        .text-reveal span:nth-child(5) { animation-delay: 1.1s; } /* Space */
+        .text-reveal span:nth-child(6) { animation-delay: 1.4s; }
+        .text-reveal span:nth-child(7) { animation-delay: 1.6s; }
+        .text-reveal span:nth-child(8) { animation-delay: 1.8s; }
+        .text-reveal span:nth-child(9) { animation-delay: 2.0s; }
+
+        @keyframes revealLetter {
+            to {
+                opacity: 1;
+                transform: scale(1) translateZ(0);
+                filter: blur(0px);
+            }
+        }
+
+        @keyframes fadeOutText {
+            to {
+                opacity: 0;
+                transform: scale(0.95);
+                filter: blur(4px);
+            }
+        }
+
+        /* --- LOGO ANIMATION --- */
+        .logo-container {
+            position: absolute;
+            opacity: 0;
+            animation: fadeInLogo 1s forwards;
+            animation-delay: 5.2s; /* Show up right after text fades out */
+        }
+
+        @keyframes fadeInLogo {
+            to { opacity: 1; }
+        }
+
+        .md-logo {
+            width: 280px;
+            height: auto;
+            overflow: visible;
+        }
+
+        .md-path {
+            fill: transparent;
+            stroke: var(--text-color);
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .md-path.accent {
+            stroke: var(--line-color);
+            stroke-width: 2;
+        }
+
+        /* Draw animation */
+        .draw-path {
+            animation: drawPathAnim 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* Sequence: M -> D -> Line */
+        .path-m { animation-delay: 5.8s; }
+        .path-d { animation-delay: 6.8s; }
+        .path-line { animation-delay: 8.0s; }
+
+        @keyframes drawPathAnim {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        /* Final aesthetic glow to make the logo pop */
+        .logo-glow {
+            transition: filter 2s ease-in-out;
+            animation: addGlow 2.5s forwards;
+            animation-delay: 9.0s;
+        }
+
+        @keyframes addGlow {
+            to {
+                filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.3));
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-gradient"></div>
+
+    <div class="reveal-container content-layer">
+        <!-- Step 1: Text Reveal -->
+        <div class="text-reveal">
+            <span>M</span><span>E</span><span>E</span><span>T</span><span style="width: 0.3em;">&nbsp;</span><span>D</span><span>A</span><span>V</span><span>E</span>
+        </div>
+
+        <!-- Step 2: Logo Reveal -->
+        <div class="logo-container">
+            <!-- 
+                SVG Logo designed dynamically.
+                Coordinates carefully crafted to form an elegant 'M' and 'D'.
+            -->
+            <svg class="md-logo logo-glow" viewBox="0 0 220 150" xmlns="http://www.w3.org/2000/svg">
+                <!-- 'M' -->
+                <path class="md-path path-m draw-path" d="M 25 110 L 25 30 L 65 70 L 105 30 L 105 110" />
+                
+                <!-- 'D' -->
+                <path class="md-path path-d draw-path" d="M 135 110 L 135 30 C 185 30, 195 50, 195 70 C 195 90, 185 110, 135 110 Z" />
+                
+                <!-- The striking line beneath -->
+                <path class="md-path path-line draw-path accent" d="M 10 135 L 210 135" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- Script to calculate exact path lengths for flawless drawing animation -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const paths = document.querySelectorAll('.md-path');
+            paths.forEach(path => {
+                const length = path.getTotalLength();
+                // Initialize the dashed properties to perfectly hide the path
+                path.style.strokeDasharray = length;
+                path.style.strokeDashoffset = length;
+            });
+        });
+    </script>
+</body>
+</html>

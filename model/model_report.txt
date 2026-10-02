@@ -1,0 +1,41 @@
+BurnoutAI — Model Training Report
+============================================================
+
+Best Model     : Random Forest
+Test Accuracy  : 0.8042 (80.4%)
+Test F1        : 0.7935
+CV F1 (5-fold) : 0.8198 ± 0.0075
+
+All Models Comparison:
+------------------------------------------------------------
+  Random Forest             | CV: 0.8198 | Acc: 0.8042 | F1: 0.7935
+  Gradient Boosting         | CV: 0.7999 | Acc: 0.7875 | F1: 0.7808
+  Logistic Regression       | CV: 0.7890 | Acc: 0.7850 | F1: 0.7808
+
+Classification Report:
+------------------------------------------------------------
+               precision    recall  f1-score   support
+
+      Healthy       0.99      0.99      0.99       300
+Moderate Risk       0.93      0.76      0.84       319
+    High Risk       0.55      0.39      0.46       246
+ Burnout Zone       0.71      0.99      0.82       335
+
+     accuracy                           0.80      1200
+    macro avg       0.79      0.78      0.78      1200
+ weighted avg       0.81      0.80      0.79      1200
+
+Feature Importances:
+------------------------------------------------------------
+  motivation_level               0.212971
+  exhaustion_score               0.174463
+  cynicism_score                 0.134029
+  efficacy_score                 0.128047
+  can_disconnect                 0.092679
+  support_from_manager           0.073806
+  avg_hours_per_day              0.065983
+  leave_days_last_month          0.038293
+  late_logins_per_week           0.036598
+  meetings_per_day               0.033824
+  role_type_enc                  0.005574
+  remote_work                    0.003734

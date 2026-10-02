@@ -1,0 +1,25 @@
+# One-click deploy on Render (https://render.com): New → Blueprint → pick this repo.
+# Database: create a free PostgreSQL on Neon (https://neon.tech) and paste its connection string as DATABASE_URL.
+services:
+  - type: web
+    name: burnoutai
+    runtime: docker
+    plan: starter            # 'free' works for demos but sleeps when idle and has 512 MB RAM
+    healthCheckPath: /api/health
+    envVars:
+      - key: ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: DATABASE_URL
+        sync: false          # paste your Neon / Postgres URL in the dashboard
+      - key: APP_URL
+        sync: false          # e.g. https://burnoutai.onrender.com or your own domain
+      - key: REQUIRE_EMAIL_VERIFICATION
+        value: "false"       # set to "true" once email sending is configured
+      - key: EMAIL_BACKEND
+        value: console       # "smtp" + SMTP_* once you have an email provider
+      - key: MIN_GROUP_SIZE
+        value: "5"

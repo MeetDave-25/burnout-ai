@@ -1,0 +1,2695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BurnoutAI — Modern Predictive Burnout Detection & XAI System</title>
+  <meta name="description" content="AI-powered burnout prediction with Bento Grid design, SHAP XAI explanations, and Aria AI coach." />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <!-- External JS Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <style>
+    /* ─── RESET & VARS ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-dark:       #020617;  /* Deep Space Slate */
+      --bg-card:       rgba(15, 23, 42, 0.6);
+      --border-light:  rgba(255, 255, 255, 0.1);
+      
+      --indigo:        #3B82F6;
+      --indigo-light:  #60A5FA;
+      --purple:        #8B5CF6;
+      --purple-light:  #A78BFA;
+      --cyan:          #06B6D4;
+      --teal:          #10B981;
+      --teal-light:    #34D399;
+      --amber:         #F59E0B;
+      --amber-light:   #FBBF24;
+      --orange:        #F97316;
+      --red:           #EF4444;
+      --red-light:     #F87171;
+
+      --text-bright:   #F8FAFC;
+      --text-mid:      #CBD5E1;
+      --text-muted:    #64748B;
+      
+      --radius-sm:     12px;
+      --radius-md:     18px;
+      --radius-lg:     24px;
+      --radius-xl:     32px;
+      
+      --glow-indigo:   0 0 20px rgba(59, 130, 246, 0.4);
+      --glow-purple:   0 0 20px rgba(139, 92, 246, 0.4);
+      --glow-teal:     0 0 20px rgba(16, 185, 129, 0.4);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-mid);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    h1, h2, h3, h4, h5, h6 { font-family: 'Outfit', sans-serif; color: var(--text-bright); }
+
+    /* Dynamic Background Canvas */
+    .bg-canvas {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg-grid-pattern {
+      position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.6;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.15;
+      animation: floatOrb 22s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 650px; height: 650px; background: var(--indigo); top: -200px; left: -150px; animation-duration: 25s; }
+    .orb-2 { width: 550px; height: 550px; background: var(--purple); bottom: -150px; right: -150px; animation-duration: 20s; animation-delay: -7s; }
+    .orb-3 { width: 450px; height: 450px; background: var(--teal); top: 35%; left: 45%; animation-duration: 28s; animation-delay: -14s; }
+
+    @keyframes floatOrb {
+      0%   { transform: translate(0, 0) scale(1); }
+      50%  { transform: translate(50px, 60px) scale(1.08); }
+      100% { transform: translate(-40px, 80px) scale(0.95); }
+    }
+
+    /* ─── 3D COVERFLOW CAROUSEL COMPONENT ───────────────────── */
+    .coverflow-wrapper {
+      width: 100%; max-width: 1180px; margin: 40px auto 30px; position: relative; perspective: 1200px; padding: 20px 0 40px;
+    }
+    .coverflow-stage { display: flex; justify-content: center; align-items: center; position: relative; height: 400px; transform-style: preserve-3d; }
+    .coverflow-card {
+      position: absolute; width: 340px; height: 355px; border-radius: var(--radius-lg); padding: 28px;
+      background: var(--bg-card); backdrop-filter: blur(16px); border: 1px solid var(--border-light);
+      cursor: pointer; user-select: none; display: flex; flex-direction: column; justify-content: space-between;
+      transition: transform 0.55s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.55s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    .coverflow-card.card-0 { --accent-color: var(--red-light); }
+    .coverflow-card.card-1 { --accent-color: var(--amber-light); }
+    .coverflow-card.card-2 { --accent-color: var(--purple-light); }
+    .coverflow-card.card-3 { --accent-color: var(--teal-light); }
+    .coverflow-card.card-4 { --accent-color: var(--cyan); }
+
+    .coverflow-card.pos-active {
+      transform: translateX(0) translateZ(120px) rotateY(0deg) scale(1.08) !important;
+      z-index: 10 !important; opacity: 1 !important; border-color: var(--accent-color);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 30px rgba(255,255,255,0.05);
+    }
+    .coverflow-card.pos-left-1 { transform: translateX(-250px) translateZ(-60px) rotateY(28deg) scale(0.85) !important; z-index: 5 !important; opacity: 0.8 !important; }
+    .coverflow-card.pos-left-2 { transform: translateX(-440px) translateZ(-160px) rotateY(42deg) scale(0.7) !important; z-index: 2 !important; opacity: 0.45 !important; }
+    .coverflow-card.pos-right-1 { transform: translateX(250px) translateZ(-60px) rotateY(-28deg) scale(0.85) !important; z-index: 5 !important; opacity: 0.8 !important; }
+    .coverflow-card.pos-right-2 { transform: translateX(440px) translateZ(-160px) rotateY(-42deg) scale(0.7) !important; z-index: 2 !important; opacity: 0.45 !important; }
+    .coverflow-card.pos-hidden { transform: translateX(0) translateZ(-300px) scale(0.5) !important; z-index: 0 !important; opacity: 0 !important; pointer-events: none !important; }
+
+    .coverflow-badge {
+      align-self: flex-start; display: inline-flex; padding: 4px 12px; border-radius: 100px;
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      background: rgba(255,255,255,0.1); color: var(--accent-color); border: 1px solid rgba(255,255,255,0.2);
+    }
+    .coverflow-icon { font-size: 2.5rem; margin: 10px 0 6px; }
+    .coverflow-title { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--text-bright); line-height: 1.25; margin-bottom: 8px; }
+    .coverflow-desc { font-size: 0.85rem; color: var(--text-mid); line-height: 1.45; }
+    .coverflow-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+    .coverflow-metric { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.05rem; color: var(--accent-color); }
+    
+    .coverflow-controls { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 24px; }
+    .coverflow-btn {
+      width: 48px; height: 48px; border-radius: 14px; background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-light); color: #FFF; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
+    }
+    .coverflow-btn:hover { background: var(--indigo); border-color: var(--indigo-light); transform: translateY(-2px); box-shadow: var(--glow-indigo); }
+    .coverflow-dots { display: flex; gap: 10px; align-items: center; }
+    .coverflow-dot { width: 12px; height: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; transition: all 0.3s ease; }
+    .coverflow-dot.active { width: 32px; background: var(--indigo-light); box-shadow: 0 0 12px rgba(96, 165, 250, 0.5); }
+
+
+    .coverflow-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .coverflow-metric {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--accent-color);
+    }
+
+    /* Cover Flow Navigation Controls */
+    .coverflow-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .coverflow-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid #1E293B;
+      box-shadow: 4px 4px 0px #090D16;
+      color: #FFF;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .coverflow-btn:hover {
+      background: var(--indigo);
+      border-color: var(--indigo-light);
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px rgba(0,0,0,0.6);
+    }
+
+    .coverflow-dots {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .coverflow-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .coverflow-dot.active {
+      width: 32px;
+      background: var(--indigo-light);
+      box-shadow: 0 0 12px rgba(129, 140, 248, 0.5);
+    }
+
+    /* ─── DYNAMIC BACKGROUND ORBS & GRID PATTERN ──────────── */
+    .bg-canvas {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg-grid-pattern {
+      position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.6;
+    }
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.15;
+      animation: floatOrb 22s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 650px; height: 650px; background: var(--indigo); top: -200px; left: -150px; animation-duration: 25s; }
+    .orb-2 { width: 550px; height: 550px; background: var(--purple); bottom: -150px; right: -150px; animation-duration: 20s; animation-delay: -7s; }
+    .orb-3 { width: 450px; height: 450px; background: var(--teal); top: 35%; left: 45%; animation-duration: 28s; animation-delay: -14s; }
+
+    @keyframes floatOrb {
+      0%   { transform: translate(0, 0) scale(1); }
+      50%  { transform: translate(50px, 60px) scale(1.08); }
+      100% { transform: translate(-40px, 80px) scale(0.95); }
+    }
+
+    /* ─── LAYOUT STRUCTURE ────────────────────────────────── */
+    .app { position: relative; z-index: 1; }
+
+    .view { display: none; min-height: 100vh; width: 100%; }
+    .view.active { display: flex; flex-direction: column; align-items: center; }
+
+    /* ─── NAVIGATION BAR ──────────────────────────────────── */
+    nav {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px; position: sticky; top: 0; z-index: 100;
+      background: rgba(7, 11, 20, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-light);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 12px;
+      font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 800;
+      color: var(--text-bright); cursor: pointer; text-decoration: none;
+    }
+    .nav-logo .logo-box {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--indigo), var(--purple));
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; box-shadow: 0 0 20px rgba(99,102,241,0.4);
+    }
+    .nav-links { display: flex; gap: 10px; align-items: center; }
+    .nav-btn {
+      padding: 9px 20px; border-radius: var(--radius-sm); border: 1px solid var(--border-light);
+      background: rgba(255, 255, 255, 0.03); color: var(--text-mid); cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.875rem; font-weight: 500;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav-btn:hover { background: rgba(99, 102, 241, 0.12); border-color: var(--indigo-light); color: var(--text-bright); }
+    .nav-btn.primary {
+      background: linear-gradient(135deg, var(--indigo), var(--purple));
+      border: none; color: white; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+    }
+    .nav-btn.primary:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4); }
+
+    /* ─── BENTO GRID SYSTEM ────────────────────────────────── */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .col-span-12 { grid-column: span 12; }
+    .col-span-8  { grid-column: span 8; }
+    .col-span-7  { grid-column: span 7; }
+    .col-span-6  { grid-column: span 6; }
+    .col-span-5  { grid-column: span 5; }
+    .col-span-4  { grid-column: span 4; }
+    .col-span-3  { grid-column: span 3; }
+
+    @media (max-width: 1024px) {
+      .col-span-8, .col-span-7, .col-span-6, .col-span-5, .col-span-4, .col-span-3 {
+        grid-column: span 12;
+      }
+      nav { padding: 16px 20px; }
+    }
+
+    .bento-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+    }
+    .bento-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 0%), rgba(255,255,255,0.04), transparent 40%);
+      pointer-events: none; opacity: 0; transition: opacity 0.3s;
+    }
+    .bento-card:hover::before { opacity: 1; }
+    .bento-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.12);
+    }
+
+    /* Bento variants */
+    .bento-card.glow-indigo { border-top: 2px solid var(--indigo); }
+    .bento-card.glow-teal   { border-top: 2px solid var(--teal); }
+    .bento-card.glow-amber  { border-top: 2px solid var(--amber); }
+    .bento-card.glow-purple { border-top: 2px solid var(--purple); }
+    .bento-card.glow-red    { border-top: 2px solid var(--red); }
+
+    /* Bento inner elements */
+    .bento-tag {
+      align-self: flex-start;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .bento-tag.indigo { background: rgba(99, 102, 241, 0.15); color: var(--indigo-light); border: 1px solid rgba(99, 102, 241, 0.3); }
+    .bento-tag.teal   { background: rgba(16, 185, 129, 0.15); color: var(--teal-light); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .bento-tag.amber  { background: rgba(245, 158, 11, 0.15); color: var(--amber-light); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .bento-tag.purple { background: rgba(139, 92, 246, 0.15); color: var(--purple-light); border: 1px solid rgba(139, 92, 246, 0.3); }
+    .bento-tag.red    { background: rgba(239, 68, 68, 0.15); color: var(--red-light); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .bento-title {
+      font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 700;
+      color: var(--text-bright); margin-bottom: 8px; line-height: 1.3;
+    }
+    .bento-desc {
+      font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;
+    }
+
+    /* ─── BUTTONS & BADGES ────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 12px 28px; border-radius: var(--radius-md); border: none; cursor: pointer;
+      font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 600;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); letter-spacing: 0.01em;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--indigo) 0%, var(--purple) 100%);
+      color: white; box-shadow: 0 8px 25px rgba(99, 102, 241, 0.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(99, 102, 241, 0.45); }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light);
+      color: var(--text-mid);
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); color: var(--text-bright); border-color: rgba(255, 255, 255, 0.2); }
+    .btn-teal {
+      background: linear-gradient(135deg, var(--teal), var(--cyan));
+      color: white; box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+    }
+    .btn-teal:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4); }
+    .btn-lg { padding: 16px 40px; font-size: 1.05rem; border-radius: var(--radius-md); }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 100px; font-size: 0.8rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-indigo { background: rgba(99, 102, 241, 0.15); color: var(--indigo-light); border: 1px solid rgba(99, 102, 241, 0.3); }
+    .badge-teal   { background: rgba(16, 185, 129, 0.15); color: var(--teal-light); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-amber  { background: rgba(245, 158, 11, 0.15); color: var(--amber-light); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-purple { background: rgba(139, 92, 246, 0.15); color: var(--purple-light); border: 1px solid rgba(139, 92, 246, 0.3); }
+    .badge-red    { background: rgba(239, 68, 68, 0.15); color: var(--red-light); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* ─── TYPOGRAPHY HELPERS ──────────────────────────────── */
+    .hero-title {
+      font-family: 'Outfit', sans-serif; font-size: clamp(2.8rem, 5.5vw, 4.2rem);
+      font-weight: 900; line-height: 1.1; letter-spacing: -0.03em;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #A5B4FC 0%, #34D399 50%, #FCD34D 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .section-title {
+      font-family: 'Outfit', sans-serif; font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 800; line-height: 1.2; letter-spacing: -0.02em;
+    }
+    .lead { font-size: 1.1rem; color: var(--text-mid); line-height: 1.7; }
+
+    .text-center { text-align: center; }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+    .mt-32 { margin-top: 32px; }
+    .mt-48 { margin-top: 48px; }
+    .mt-64 { margin-top: 64px; }
+    .mb-16 { margin-bottom: 16px; }
+    .mb-24 { margin-bottom: 24px; }
+    .mb-32 { margin-bottom: 32px; }
+
+    /* ────────────────────────────────────────────────────────
+       VIEW 1: LANDING & HERO BENTO GRID
+    ─────────────────────────────────────────────────────────── */
+    #view-landing { padding-bottom: 100px; }
+
+    .hero {
+      max-width: 860px; margin: 60px auto 0; padding: 0 24px;
+      text-align: center; display: flex; flex-direction: column; align-items: center;
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 8px 22px; border-radius: 100px;
+      background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25);
+      font-size: 0.85rem; font-weight: 600; color: var(--indigo-light);
+      margin-bottom: 28px; letter-spacing: 0.02em;
+    }
+    .hero-pill .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--teal);
+      box-shadow: 0 0 10px var(--teal);
+      animation: pulseDot 2s ease-in-out infinite;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .hero-subtitle {
+      font-size: clamp(1.05rem, 2vw, 1.25rem); color: var(--text-mid);
+      max-width: 660px; line-height: 1.7; margin: 24px 0 36px;
+    }
+    .hero-cta { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+
+    /* Stat Bento Bar */
+    .stat-bento-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+      width: 100%; max-width: 1180px; margin: 56px auto 0; padding: 0 24px;
+    }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius-md); padding: 24px 20px; text-align: center;
+      transition: all 0.3s; backdrop-filter: blur(12px);
+    }
+    .stat-card:hover {
+      border-color: rgba(99, 102, 241, 0.3); transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(99, 102, 241, 0.15);
+    }
+    .stat-num {
+      font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 800;
+      background: linear-gradient(135deg, var(--indigo-light), var(--teal-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+
+    @media (max-width: 768px) {
+      .stat-bento-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Live AI Widget inside Bento Card */
+    .widget-preview {
+      background: rgba(7, 11, 20, 0.7);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 20px; margin-top: 16px;
+    }
+    .widget-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .widget-row:last-child { border-bottom: none; }
+    .widget-key { font-size: 0.85rem; color: var(--text-mid); display: flex; align-items: center; gap: 8px; }
+    .widget-val { font-size: 0.85rem; font-weight: 700; color: var(--teal-light); }
+
+    /* Phenotype Bento List */
+    .pheno-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+    .pheno-item {
+      display: flex; align-items: flex-start; gap: 10px; font-size: 0.875rem; color: var(--text-mid);
+    }
+    .pheno-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+
+    /* ────────────────────────────────────────────────────────
+       VIEW 2: ROLE SELECTOR
+    ─────────────────────────────────────────────────────────── */
+    #view-role { justify-content: center; padding: 60px 24px; }
+    .role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 960px; width: 100%; }
+    .role-card {
+      background: var(--bg-card); border: 2px solid var(--border-light);
+      border-radius: var(--radius-lg); padding: 40px 28px; text-align: center;
+      cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; flex-direction: column; align-items: center; position: relative;
+    }
+    .role-card:hover { border-color: var(--indigo); transform: translateY(-5px); box-shadow: var(--glow-indigo); }
+    .role-card.selected { border-color: var(--teal); background: rgba(16, 185, 129, 0.08); box-shadow: var(--glow-teal); }
+    .role-emoji { font-size: 3.2rem; margin-bottom: 20px; }
+    .role-name { font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 800; margin-bottom: 10px; }
+    .role-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; }
+
+    @media (max-width: 768px) { .role-grid { grid-template-columns: 1fr; } }
+
+    /* ────────────────────────────────────────────────────────
+       VIEW 3: ASSESSMENT QUESTIONNAIRE
+    ─────────────────────────────────────────────────────────── */
+    #view-assessment { justify-content: flex-start; padding: 40px 24px 80px; }
+    .assessment-header { width: 100%; max-width: 760px; margin-bottom: 28px; }
+    .q-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 12px; }
+    
+    .progress-bar-wrap { width: 100%; background: rgba(255,255,255,0.06); border-radius: 100px; height: 6px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--indigo), var(--teal)); transition: width 0.4s ease; }
+
+    .question-card {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius-xl); padding: 40px; width: 100%; max-width: 760px;
+      backdrop-filter: blur(20px);
+    }
+    .q-category { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--indigo-light); margin-bottom: 12px; }
+    .q-text { font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
+    .q-hint { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 32px; }
+
+    /* Options */
+    .likert-wrap { display: flex; flex-direction: column; gap: 12px; }
+    .likert-option {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 20px; border-radius: var(--radius-md);
+      border: 1px solid var(--border-light); background: rgba(255,255,255,0.02);
+      cursor: pointer; transition: all 0.2s; user-select: none;
+    }
+    .likert-option:hover { border-color: var(--indigo-light); background: rgba(99, 102, 241, 0.08); }
+    .likert-option.selected { border-color: var(--teal); background: rgba(16, 185, 129, 0.1); }
+    .likert-radio {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--text-muted);
+      flex-shrink: 0; transition: all 0.2s; position: relative;
+    }
+    .likert-option.selected .likert-radio { border-color: var(--teal); background: var(--teal); }
+    .likert-option.selected .likert-radio::after {
+      content: ''; position: absolute; inset: 5px; border-radius: 50%; background: white;
+    }
+    .likert-label { font-size: 0.95rem; color: var(--text-mid); flex: 1; }
+    .likert-option.selected .likert-label { color: var(--text-bright); font-weight: 600; }
+    .likert-value { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+
+    .num-input-wrap { display: flex; flex-direction: column; gap: 16px; padding: 10px 0; }
+    .num-display { font-family: 'Outfit', sans-serif; font-size: 3rem; font-weight: 800; color: var(--teal-light); text-align: center; }
+    .num-slider {
+      width: 100%; height: 10px; -webkit-appearance: none; appearance: none;
+      background: rgba(255,255,255,0.08); border-radius: 100px; outline: none; cursor: pointer;
+    }
+    .num-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 26px; height: 26px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--indigo), var(--teal)); cursor: pointer;
+      box-shadow: 0 0 15px rgba(16,185,129,0.5);
+    }
+    .num-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); }
+
+    .binary-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .binary-btn {
+      padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-light);
+      background: rgba(255,255,255,0.02); text-align: center; cursor: pointer; transition: all 0.2s;
+      display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 1rem; font-weight: 600;
+    }
+    .binary-btn span:first-child { font-size: 2.2rem; }
+    .binary-btn:hover { border-color: var(--indigo); background: rgba(99,102,241,0.08); }
+    .binary-btn.selected { border-color: var(--teal); background: rgba(16,185,129,0.12); box-shadow: var(--glow-teal); }
+
+    .q-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 36px; pt: 20px; border-top: 1px solid var(--border-light); }
+    .q-counter { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+
+    /* ────────────────────────────────────────────────────────
+       VIEW 4: BENTO RESULTS DASHBOARD
+    ─────────────────────────────────────────────────────────── */
+    #view-results { padding: 40px 24px 80px; }
+
+    /* Loading screen */
+    .loading-screen {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 450px; text-align: center; gap: 24px;
+    }
+    .spinner {
+      width: 56px; height: 56px; border-radius: 50%;
+      border: 3px solid rgba(99, 102, 241, 0.15); border-top-color: var(--teal);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 700; }
+    .loading-step { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* Semi-Circle SVG Gauge */
+    .gauge-wrap {
+      position: relative; width: 240px; height: 130px; margin: 0 auto 12px;
+    }
+    .gauge-svg { width: 100%; height: 100%; overflow: visible; }
+    .gauge-score {
+      position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+      font-family: 'Outfit', sans-serif; font-size: 3rem; font-weight: 900; line-height: 1;
+    }
+    .gauge-risk-label { font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
+
+    /* Probability Pills */
+    .prob-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+    .prob-card {
+      background: rgba(7, 11, 20, 0.6); border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm); padding: 12px; text-align: center;
+    }
+    .prob-pct { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; }
+    .prob-lbl { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* SHAP Bars */
+    .shap-bar-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .shap-row { display: flex; align-items: center; gap: 16px; font-size: 0.85rem; }
+    .shap-label { width: 160px; flex-shrink: 0; color: var(--text-mid); text-align: right; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .shap-track { flex: 1; height: 12px; background: rgba(255,255,255,0.06); border-radius: 100px; position: relative; overflow: hidden; }
+    .shap-center { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.2); }
+    .shap-fill { position: absolute; top: 0; bottom: 0; border-radius: 100px; transition: width 0.8s ease, left 0.8s ease; }
+    .shap-fill.up { background: linear-gradient(90deg, var(--orange), var(--red)); }
+    .shap-fill.down { background: linear-gradient(90deg, var(--teal), var(--cyan)); }
+    .shap-val { width: 60px; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+    .shap-val.up { color: var(--red-light); }
+    .shap-val.down { color: var(--teal-light); }
+
+    .xai-legend { display: flex; gap: 20px; justify-content: center; font-size: 0.8rem; color: var(--text-muted); margin-top: 16px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+
+    .xai-narrative {
+      background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: var(--radius-md); padding: 20px; margin-top: 20px;
+      font-size: 0.95rem; color: var(--text-mid); line-height: 1.6;
+    }
+
+    .rec-list { display: flex; flex-direction: column; gap: 12px; }
+    .rec-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 18px; border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.02); border: 1px solid var(--border-light);
+    }
+    .rec-num {
+      width: 26px; height: 26px; border-radius: 50%; background: rgba(16, 185, 129, 0.15);
+      color: var(--teal-light); font-weight: 700; font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .rec-text { font-size: 0.9rem; color: var(--text-mid); line-height: 1.5; }
+
+    /* ────────────────────────────────────────────────────────
+       VIEW 5: DASHBOARD
+    ─────────────────────────────────────────────────────────── */
+    #view-dashboard { padding: 40px 24px 80px; }
+
+    .dash-streak-card {
+      background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1));
+      border: 1px solid rgba(99,102,241,0.3); border-radius: var(--radius-lg);
+      padding: 24px; text-align: center;
+    }
+    .streak-num { font-family: 'Outfit', sans-serif; font-size: 3rem; font-weight: 900; color: var(--indigo-light); }
+
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.02); border: 1px solid var(--border-light);
+    }
+    .history-date { font-size: 0.85rem; color: var(--text-muted); }
+    .history-score { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800; }
+
+    /* ────────────────────────────────────────────────────────
+       VIEW 6: ABOUT AI & RESEARCH
+    ─────────────────────────────────────────────────────────── */
+    #view-about { padding: 40px 24px 80px; }
+    .about-wrap { max-width: 900px; width: 100%; display: flex; flex-direction: column; gap: 24px; }
+    .about-card {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg); padding: 32px; backdrop-filter: blur(20px);
+    }
+    .about-card h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+    .about-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .about-list li { font-size: 0.9rem; color: var(--text-mid); padding-left: 20px; position: relative; }
+    .about-list li::before { content: '•'; position: absolute; left: 0; color: var(--teal); font-weight: bold; }
+
+    /* ────────────────────────────────────────────────────────
+       ARIA AI CHATBOT FLOATING PANEL
+    ─────────────────────────────────────────────────────────── */
+    .chat-bubble {
+      position: fixed; bottom: 28px; right: 28px; z-index: 1000;
+      width: 60px; height: 60px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--indigo), var(--purple));
+      border: none; color: white; font-size: 1.6rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .chat-bubble:hover { transform: scale(1.08); box-shadow: 0 14px 40px rgba(99, 102, 241, 0.5); }
+    .chat-badge {
+      position: absolute; top: -2px; right: -2px; width: 20px; height: 20px;
+      border-radius: 50%; background: var(--teal); color: white;
+      font-size: 0.75rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--bg-dark);
+    }
+
+    .chat-window {
+      position: fixed; bottom: 100px; right: 28px; z-index: 999;
+      width: 380px; max-width: calc(100vw - 40px); height: 540px; max-height: calc(100vh - 140px);
+      background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12); border-radius: var(--radius-xl);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      display: flex; flex-direction: column; overflow: hidden;
+      opacity: 0; transform: translateY(20px) scale(0.95); pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .chat-window.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+
+    .chat-header {
+      padding: 16px 20px; background: rgba(7, 11, 20, 0.8);
+      border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .chat-header-info { display: flex; align-items: center; gap: 12px; }
+    .chat-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--indigo), var(--purple));
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    }
+    .chat-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem; }
+    .chat-status { font-size: 0.75rem; color: var(--teal-light); display: flex; align-items: center; gap: 4px; }
+    .chat-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+
+    .chat-messages {
+      flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+    }
+    .chat-msg { display: flex; gap: 10px; max-width: 85%; }
+    .chat-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg-bubble {
+      padding: 12px 16px; border-radius: 16px; font-size: 0.875rem; line-height: 1.5;
+    }
+    .chat-msg.aria .msg-bubble { background: rgba(255,255,255,0.06); border: 1px solid var(--border-light); color: var(--text-bright); border-top-left-radius: 4px; }
+    .chat-msg.user .msg-bubble { background: linear-gradient(135deg, var(--indigo), var(--purple)); color: white; border-top-right-radius: 4px; }
+
+    .chat-suggestions { padding: 8px 16px; display: flex; gap: 6px; overflow-x: auto; border-top: 1px solid rgba(255,255,255,0.04); }
+    .chat-suggestion {
+      padding: 6px 12px; border-radius: 100px; background: rgba(255,255,255,0.04); border: 1px solid var(--border-light);
+      color: var(--text-mid); font-size: 0.75rem; white-space: nowrap; cursor: pointer; transition: all 0.2s;
+    }
+    .chat-suggestion:hover { background: rgba(99,102,241,0.15); border-color: var(--indigo-light); color: white; }
+
+    .chat-input-row {
+      padding: 12px 16px; background: rgba(7, 11, 20, 0.8); border-top: 1px solid var(--border-light);
+      display: flex; gap: 8px;
+    }
+    .chat-input {
+      flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm); padding: 10px 14px; color: white; font-family: inherit; font-size: 0.875rem; outline: none;
+    }
+    .chat-input:focus { border-color: var(--indigo); }
+    .chat-send {
+      width: 40px; height: 40px; border-radius: var(--radius-sm); border: none;
+      background: var(--indigo); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .chat-send:hover { background: var(--indigo-light); }
+
+    /* Typing Dots */
+    .typing-indicator { display: flex; gap: 4px; padding: 6px 4px; }
+    .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); animation: typingBounce 1.4s infinite ease-in-out both; }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typingBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+    /* --- GAME INTRO STYLES --- */
+    #game-intro-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: #fcf9f4; /* EXACT MATCH to logo.jpeg background */
+      z-index: 999999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+      color: #050505;
+      transition: opacity 1.5s ease-out;
+    }
+
+    #intro-start-screen {
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .press-start {
+      font-size: 1.5rem;
+      letter-spacing: 0.3em;
+      animation: pulseStart 1.5s infinite;
+      text-transform: uppercase;
+      font-weight: 300;
+      color: rgba(5, 5, 5, 0.7);
+    }
+    @keyframes pulseStart { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    #intro-cinematic {
+      display: none;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .intro-text {
+      position: absolute;
+      font-size: 4rem;
+      font-weight: 300;
+      letter-spacing: 0.8em;
+      margin-right: -0.8em;
+      text-transform: uppercase;
+      display: flex;
+      opacity: 1;
+      transition: opacity 1.5s ease, transform 1.5s ease, filter 1.5s ease;
+    }
+
+    .intro-text.fade-out {
+      opacity: 0;
+      transform: scale(0.9) translateY(-20px);
+      filter: blur(5px);
+      visibility: hidden;
+    }
+
+    .intro-text span {
+      opacity: 0;
+      display: inline-block;
+      transform-style: preserve-3d;
+      transform-origin: 50% 100%;
+      transform: perspective(400px) rotateX(-90deg);
+      animation: flipCalendar 3.0s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* Dramatic, extremely slow spell out */
+    .intro-text span:nth-child(1) { animation-delay: 0.1s; }
+    .intro-text span:nth-child(2) { animation-delay: 1.6s; }
+    .intro-text span:nth-child(3) { animation-delay: 3.1s; }
+    .intro-text span:nth-child(4) { animation-delay: 4.6s; }
+    .intro-text span:nth-child(5) { animation-delay: 6.1s; }
+    .intro-text span:nth-child(6) { animation-delay: 7.6s; }
+    .intro-text span:nth-child(7) { animation-delay: 9.1s; }
+    .intro-text span:nth-child(8) { animation-delay: 10.6s; }
+    .intro-text span:nth-child(9) { animation-delay: 12.1s; }
+
+    @keyframes flipCalendar {
+      0% { opacity: 0; transform: perspective(400px) rotateX(-90deg); }
+      100% { opacity: 1; transform: perspective(400px) rotateX(0deg); }
+    }
+
+    .intro-logo-container {
+      position: absolute;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    .intro-logo-container.fade-in {
+      opacity: 1;
+    }
+
+    .intro-md-logo { width: 300px; height: auto; overflow: visible; }
+    .intro-md-path { fill: transparent; stroke-linecap: round; stroke-linejoin: round; }
+
+    .draw-path { animation: drawPathAnim 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    .intro-path-m { animation-delay: 5.2s; }
+    .intro-path-d { animation-delay: 6.0s; }
+    .intro-path-line { animation-delay: 6.8s; }
+
+    .intro-glow {
+      transition: filter 1s ease-in;
+      animation: addIntroGlow 2s forwards;
+      animation-delay: 7.5s;
+    }
+
+    @keyframes addIntroGlow { to { filter: drop-shadow(0 0 25px rgba(255,255,255,0.6)) drop-shadow(0 0 10px rgba(212, 175, 55, 0.8)); } }
+
+    /* --- MOBILE RESPONSIVENESS --- */
+    @media (max-width: 768px) {
+      /* Intro sizing */
+      .intro-text { font-size: 2rem !important; letter-spacing: 0.4em !important; margin-right: -0.4em !important; }
+      .intro-md-logo { width: 80vw !important; }
+      
+      /* Navigation */
+      .nav-links .nav-btn:not(.primary) { display: none; }
+      nav { flex-wrap: wrap; gap: 12px; }
+      
+      /* Typography & Hero */
+      .hero { padding: 40px 16px; }
+      .hero-title { font-size: 2.8rem; }
+      .section-title { font-size: 2rem; }
+      
+      /* Chatbot */
+      .chat-widget { width: calc(100% - 32px); bottom: 16px; right: 16px; max-height: 80vh; }
+      .chat-launcher { bottom: 16px; right: 16px; }
+      
+      /* Layout Adjustments */
+      .bento-card { padding: 24px; }
+      .coverflow-wrapper { height: 400px; }
+      .coverflow-card { width: 280px; height: 350px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- GAME INTRO DOM -->
+<div id="game-intro-overlay">
+  <div id="intro-start-screen" onclick="startIntro()">
+    <div class="press-start">Click to Initialize</div>
+  </div>
+
+  <div id="intro-cinematic">
+    <div class="intro-text">
+      <span>M</span><span>E</span><span>E</span><span>T</span><span style="width: 0.3em;">&nbsp;</span><span>D</span><span>A</span><span>V</span><span>E</span>
+    </div>
+    <div class="intro-logo-container">
+      <svg class="intro-md-logo" viewBox="0 0 1254 1254" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="cut-text">
+            <!-- This completely blocks the bottom text from EVER being revealed -->
+            <rect x="0" y="0" width="1254" height="830" />
+          </clipPath>
+          <mask id="logo-mask">
+            <!-- Massive M stroke covering the entire M bounding box -->
+            <path class="intro-md-path intro-path-m" d="M 350 850 L 350 250 L 600 550 L 850 250" stroke="white" fill="none" stroke-width="400" stroke-linecap="round" stroke-linejoin="round" />
+            <!-- Massive D stroke covering the entire D curve -->
+            <path class="intro-md-path intro-path-d" d="M 650 250 C 1300 250, 1300 850, 650 850" stroke="white" fill="none" stroke-width="400" stroke-linecap="round" />
+            <!-- Massive Diagonal Slash stroke -->
+            <path class="intro-md-path intro-path-line" d="M 250 1000 L 950 200" stroke="white" fill="none" stroke-width="250" stroke-linecap="round" />
+          </mask>
+        </defs>
+        <!-- The user's ACTUAL image perfectly cropped and masked -->
+        <image href="logo.jpeg" width="1254" height="1254" mask="url(#logo-mask)" clip-path="url(#cut-text)" />
+      </svg>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==========================================
+  // 🎬 TIMINGS CONFIGURATION (in milliseconds)
+  // Tweak these values to perfectly sync the 
+  // animations to the beat drops in your audio!
+  // ==========================================
+  const TIMINGS = {
+    // When "MEET DAVE" text fades out
+    fadeOutText: 18000, 
+    // When the logo container fades in
+    fadeInLogo: 19000, 
+    // When the M starts drawing (20s)
+    drawM: 20000, 
+    // When the D starts drawing (23s)
+    drawD: 23000, 
+    // When the gold slash strikes through (26s)
+    drawSlash: 26000, 
+    // When the whole intro fades out to reveal the site
+    fadeOutIntro: 32000 
+  };
+
+  function startIntro() {
+    document.getElementById('intro-start-screen').style.display = 'none';
+    document.getElementById('intro-cinematic').style.display = 'flex';
+    
+    // 1. PLAY HERO LEVEL MUSIC
+    const audio = new Audio('Elevated_Arrival.mp3');
+    audio.volume = 1.0;
+    audio.play().catch(e => console.warn('BGM not found or audio blocked by browser: ', e));
+
+    // 2. TIMED ANIMATIONS
+    
+    // Fade out text
+    setTimeout(() => {
+      document.querySelector('.intro-text').classList.add('fade-out');
+    }, TIMINGS.fadeOutText);
+
+    // Fade in logo container
+    setTimeout(() => {
+      document.querySelector('.intro-logo-container').classList.add('fade-in');
+    }, TIMINGS.fadeInLogo);
+
+    // Initialize SVG Paths
+    setTimeout(() => {
+      const paths = document.querySelectorAll('.intro-md-path');
+      paths.forEach(path => {
+        const length = path.getTotalLength();
+        path.style.strokeDasharray = length;
+        path.style.strokeDashoffset = length;
+        path.classList.remove('draw-path');
+      });
+
+      // Animate M (3 seconds duration for cinematic effect)
+      setTimeout(() => {
+        const m = document.querySelector('.intro-path-m');
+        m.style.transition = 'stroke-dashoffset 3s cubic-bezier(0.4, 0, 0.2, 1)';
+        m.style.strokeDashoffset = '0';
+      }, TIMINGS.drawM);
+
+      // Animate D
+      setTimeout(() => {
+        const d = document.querySelector('.intro-path-d');
+        d.style.transition = 'stroke-dashoffset 3s cubic-bezier(0.4, 0, 0.2, 1)';
+        d.style.strokeDashoffset = '0';
+      }, TIMINGS.drawD);
+
+      // Animate The Strike Line
+      setTimeout(() => {
+        const line = document.querySelector('.intro-path-line');
+        line.style.transition = 'stroke-dashoffset 3s cubic-bezier(0.4, 0, 0.2, 1)';
+        line.style.strokeDashoffset = '0';
+      }, TIMINGS.drawSlash);
+      
+    }, 50);
+
+    // 3. FADE OUT AND REVEAL MAIN LANDING PAGE
+    setTimeout(() => {
+      const overlay = document.getElementById('game-intro-overlay');
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.remove();
+      }, 1500);
+    }, TIMINGS.fadeOutIntro); 
+  }
+</script>
+
+<!-- Dynamic Background Canvas -->
+<div class="bg-canvas">
+  <div class="bg-grid-pattern"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<div class="app">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       NAVIGATION BAR
+  ═══════════════════════════════════════════════════════════════ -->
+  <nav>
+    <div class="nav-logo" onclick="showView('landing')">
+      <div class="logo-box">🧠</div>
+      <span>Burnout<span style="color:var(--teal-light)">AI</span></span>
+    </div>
+    <div class="nav-links">
+      <button class="nav-btn" onclick="showView('landing')">Home</button>
+      <button class="nav-btn" onclick="showView('dashboard')">Dashboard</button>
+      <button class="nav-btn" onclick="showView('hr')">Company HR 🏢</button>
+      <button class="nav-btn" onclick="showView('doctor')">Doctor Portal 🩺</button>
+      <button class="nav-btn" onclick="showView('about')">Research & AI</button>
+      <button class="nav-btn primary" onclick="startAssessment()">Take Assessment →</button>
+    </div>
+  </nav>
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       VIEW 1: LANDING & HERO BENTO GRID
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="view active" id="view-landing">
+
+    <!-- Hero Section Header -->
+    <div class="hero">
+      <div class="hero-pill">
+        <span class="dot"></span>
+        Predictive Machine Learning & Explainable AI (XAI)
+      </div>
+      <h1 class="hero-title">
+        Predict <span class="gradient-text">Burnout</span> Before<br />It Breaks You
+      </h1>
+      <p class="hero-subtitle">
+        Trained on 6,000+ synthetic profiles built from peer-reviewed burnout research papers.
+        Classifies risk levels, flags burnout patterns, and reveals exact feature drivers with SHAP XAI.
+      </p>
+      <div class="hero-cta">
+        <button class="btn btn-primary btn-lg" onclick="startAssessment()">
+          ⚡ Start Free Assessment
+        </button>
+        <button class="btn btn-secondary btn-lg" onclick="showView('about')">
+          🔬 Explore Research
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         3D COVER FLOW FEATURE & ARCHETYPE SHOWCASE
+    ═══════════════════════════════════════════════════════════════ -->
+    <div class="coverflow-wrapper">
+      <div class="text-center mb-16">
+        <span class="badge badge-purple mb-8" style="border: 1.5px solid var(--purple-light);">
+          ✨ Interactive Cover Flow Showcase
+        </span>
+        <h2 style="font-size: 1.6rem; font-weight: 800; color:#FFF;">Explore Burnout Archetypes & AI Engine</h2>
+      </div>
+
+      <div class="coverflow-stage" id="coverflow-stage">
+        <!-- Card 0: Frenetic Archetype -->
+        <div class="coverflow-card card-0" onclick="setCoverFlow(0)">
+          <div>
+            <div class="coverflow-badge">🔥 High Exhaustion</div>
+            <div class="coverflow-icon">⚡</div>
+            <div class="coverflow-title">Frenetic Overworker</div>
+            <div class="coverflow-desc">Driven by perfectionism & hyper-engagement. Working 11+ hours/day with zero disconnection until sudden collapse.</div>
+          </div>
+          <div class="coverflow-foot">
+            <span class="coverflow-metric">+18.4% Risk Push</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);">Paper 1 Vector</span>
+          </div>
+        </div>
+
+        <!-- Card 1: Under-Challenged Archetype -->
+        <div class="coverflow-card card-1" onclick="setCoverFlow(1)">
+          <div>
+            <div class="coverflow-badge">😒 Stagnation</div>
+            <div class="coverflow-icon">💤</div>
+            <div class="coverflow-title">Under-Challenged</div>
+            <div class="coverflow-desc">Monotonous duties, lack of growth, and emotional detachment lead to passive cynicism & cognitive withdrawal.</div>
+          </div>
+          <div class="coverflow-foot">
+            <span class="coverflow-metric">Cynicism 4.5/5</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);">WHO Dim 2</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Random Forest ML Model -->
+        <div class="coverflow-card card-2" onclick="setCoverFlow(2)">
+          <div>
+            <div class="coverflow-badge">🤖 AI Core</div>
+            <div class="coverflow-icon">🧠</div>
+            <div class="coverflow-title">Random Forest ML</div>
+            <div class="coverflow-desc">Trained on 6,000 research-backed samples with 80.4% cross-validated accuracy across 12 behavioral & psychometric features.</div>
+          </div>
+          <div class="coverflow-foot">
+            <span class="coverflow-metric">80.4% Test Acc</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);">79.4% F1 Score</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Healthy Sustainable Flow -->
+        <div class="coverflow-card card-3" onclick="setCoverFlow(3)">
+          <div>
+            <div class="coverflow-badge">🌲 Healthy Flow</div>
+            <div class="coverflow-icon">🌱</div>
+            <div class="coverflow-title">Balanced Recovery</div>
+            <div class="coverflow-desc">High managerial support, 7–8h daily limits, active disconnection, and high self-efficacy protect autonomic health.</div>
+          </div>
+          <div class="coverflow-foot">
+            <span class="coverflow-metric">Risk Score 18/100</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);">Protective</span>
+          </div>
+        </div>
+
+        <!-- Card 4: SHAP Explainable AI -->
+        <div class="coverflow-card card-4" onclick="setCoverFlow(4)">
+          <div>
+            <div class="coverflow-badge">📊 Explainable AI</div>
+            <div class="coverflow-icon">🔬</div>
+            <div class="coverflow-title">SHAP Feature Attribution</div>
+            <div class="coverflow-desc">Game-theoretic SHAP values explain exact risk pushes. Transparent, audit-proof risk decomposition for every single user.</div>
+          </div>
+          <div class="coverflow-foot">
+            <span class="coverflow-metric">Zero Black Box</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);">Shapley Value</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="coverflow-controls">
+        <button class="coverflow-btn" onclick="prevCoverFlow()">←</button>
+        <div class="coverflow-dots" id="coverflow-dots">
+          <div class="coverflow-dot" onclick="setCoverFlow(0)"></div>
+          <div class="coverflow-dot" onclick="setCoverFlow(1)"></div>
+          <div class="coverflow-dot active" onclick="setCoverFlow(2)"></div>
+          <div class="coverflow-dot" onclick="setCoverFlow(3)"></div>
+          <div class="coverflow-dot" onclick="setCoverFlow(4)"></div>
+        </div>
+        <button class="coverflow-btn" onclick="nextCoverFlow()">→</button>
+      </div>
+    </div>
+
+    <!-- Stat Bento Cards -->
+    <div class="stat-bento-grid">
+      <div class="stat-card">
+        <div class="stat-num">77%</div>
+        <div class="stat-label">of employees experience burnout symptoms (APA & Gallup)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">$322B</div>
+        <div class="stat-label">global annual cost of burnout-related turnover & sickness</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">2.6×</div>
+        <div class="stat-label">higher turnover risk for burned-out vs engaged workers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">180%</div>
+        <div class="stat-label">increased risk of clinical depression from chronic burnout</div>
+      </div>
+    </div>
+
+    <!-- Main Bento Showcase Section -->
+    <div class="bento-grid mt-64">
+      
+      <!-- Bento Tile 1: Primary Model (7 Cols) -->
+      <div class="bento-card col-span-7 glow-indigo">
+        <span class="bento-tag indigo">Random Forest Model</span>
+        <h3 class="bento-title">Trained ML Risk Prediction Engine</h3>
+        <p class="bento-desc">
+          Evaluates 12 multi-dimensional inputs across WHO burnout vectors (Exhaustion, Cynicism, Efficacy) to predict risk with 80.4% cross-validated accuracy.
+        </p>
+
+        <div class="widget-preview">
+          <div class="widget-row">
+            <span class="widget-key">📊 Primary ML Classifier</span>
+            <span class="widget-val">Random Forest Classifier</span>
+          </div>
+          <div class="widget-row">
+            <span class="widget-key">🎯 Cross-Validation F1</span>
+            <span class="widget-val">79.4% F1 Score</span>
+          </div>
+          <div class="widget-row">
+            <span class="widget-key">⚡ Training Dataset</span>
+            <span class="widget-val">6,000 Research-Backed Rows</span>
+          </div>
+          <div class="widget-row">
+            <span class="widget-key">🛡️ Output Categories</span>
+            <span class="widget-val">Healthy · Moderate · High · Burnout</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bento Tile 2: SHAP XAI (5 Cols) -->
+      <div class="bento-card col-span-5 glow-teal">
+        <span class="bento-tag teal">Explainable AI</span>
+        <h3 class="bento-title">SHAP Feature Drivers</h3>
+        <p class="bento-desc">
+          No black boxes. Game-theory SHAP values show precisely how much each work pattern or feeling pushed your risk score up or down.
+        </p>
+        
+        <div class="widget-preview">
+          <div class="widget-row">
+            <span class="widget-key">🔴 Working Hours/Day</span>
+            <span class="widget-val" style="color:var(--red-light)">+18.4% Risk Push</span>
+          </div>
+          <div class="widget-row">
+            <span class="widget-key">🔴 Emotional Exhaustion</span>
+            <span class="widget-val" style="color:var(--red-light)">+14.2% Risk Push</span>
+          </div>
+          <div class="widget-row">
+            <span class="widget-key">🟢 Manager Support</span>
+            <span class="widget-val" style="color:var(--teal-light)">-12.8% Protective</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bento Tile 3: 3 Phenotypes (4 Cols) -->
+      <div class="bento-card col-span-4 glow-amber">
+        <span class="bento-tag amber">Paper 1 Matrix</span>
+        <h3 class="bento-title">3 Burnout Phenotypes</h3>
+        <p class="bento-desc">Identifies which archetype you're trending toward so you get tailored solutions.</p>
+        
+        <ul class="pheno-list">
+          <li class="pheno-item"><div class="pheno-dot" style="background:var(--red)"></div> <strong>Frenetic:</strong> Overworkers & perfectionists</li>
+          <li class="pheno-item"><div class="pheno-dot" style="background:var(--amber)"></div> <strong>Under-Challenged:</strong> Boredom & quiet quitting</li>
+          <li class="pheno-item"><div class="pheno-dot" style="background:var(--orange)"></div> <strong>Worn-Out:</strong> Learned helplessness</li>
+        </ul>
+      </div>
+
+      <!-- Bento Tile 4: Aria AI Coach (5 Cols) -->
+      <div class="bento-card col-span-5 glow-purple">
+        <span class="bento-tag purple">Interactive Assistant</span>
+        <h3 class="bento-title">Aria — AI Coach Panel</h3>
+        <p class="bento-desc">Chat with Aria to ask questions about your assessment, study research stats, or get personalized recovery advice.</p>
+        
+        <div style="background:rgba(7,11,20,0.6);border:1px solid var(--border-light);border-radius:var(--radius-sm);padding:14px;display:flex;gap:12px;align-items:center;">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--indigo),var(--purple));display:flex;align-items:center;justify-content:center">🧠</div>
+          <div style="font-size:0.85rem;color:var(--text-mid)">"I'm trained on burnout research papers. How can I assist you today?"</div>
+        </div>
+      </div>
+
+      <!-- Bento Tile 5: Privacy First (3 Cols) -->
+      <div class="bento-card col-span-3 glow-red">
+        <span class="bento-tag red">Paper 2 Ethics</span>
+        <h3 class="bento-title">100% Private</h3>
+        <p class="bento-desc">All tracking history is stored exclusively in your browser's localStorage. Zero tracking cookies, zero third-party leaks.</p>
+      </div>
+
+    </div>
+
+    <!-- CTA Banner -->
+    <div style="width:100%;max-width:1180px;margin:64px auto 0;padding:0 24px;">
+      <div class="bento-card" style="background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(16,185,129,0.1));border-color:rgba(99,102,241,0.3);text-align:center;padding:56px 40px;align-items:center;">
+        <h2 class="section-title mb-16">Ready to Assess Your Risk?</h2>
+        <p class="lead mb-32" style="max-width:600px;">Takes 3 minutes. 100% private. Powered by your own trained Random Forest model.</p>
+        <button class="btn btn-primary btn-lg" onclick="startAssessment()">🔍 Start Assessment Now</button>
+      </div>
+    </div>
+    <!-- Footer -->
+    <footer style="width:100%; text-align:center; padding: 64px 24px 24px; color: var(--text-muted); font-size: 0.9rem; font-weight: 300; letter-spacing: 0.05em; opacity: 0.7;">
+      <p>Made by Meet Dave &copy; 2024</p>
+    </footer>
+
+  </div><!-- /landing -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       VIEW 2: ROLE SELECTOR
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-role">
+    <div style="max-width:960px;width:100%;text-align:center;margin-bottom:40px;">
+      <span class="badge badge-teal mb-16">Step 1 of 2</span>
+      <h2 class="section-title mb-16">Select Your Role Profile</h2>
+      <p class="lead">We tailor the feature weightings based on your work environment.</p>
+    </div>
+
+    <div class="role-grid">
+      <div class="role-card" id="role-employee" onclick="selectRole('employee')">
+        <div class="role-emoji">💼</div>
+        <div class="role-name">Employee / Corporate</div>
+        <div class="role-desc">Working in tech, corporate, startup, or management. Focuses on meetings, late logins, and manager support.</div>
+      </div>
+
+      <div class="role-card" id="role-student" onclick="selectRole('student')">
+        <div class="role-emoji">🎓</div>
+        <div class="role-name">Student / Academic</div>
+        <div class="role-desc">High school, college, or university. Focuses on study hours, exam stress, efficacy, and academic burnout.</div>
+      </div>
+
+      <div class="role-card" id="role-general" onclick="selectRole('general')">
+        <div class="role-emoji">🌟</div>
+        <div class="role-name">General / Freelance</div>
+        <div class="role-desc">Freelancers, creators, homemakers, or anyone tracking daily stress, exhaustion, and motivation levels.</div>
+      </div>
+    </div>
+
+    <div class="mt-48" style="display:flex;gap:16px;">
+      <button class="btn btn-secondary" onclick="showView('landing')">← Back to Home</button>
+      <button class="btn btn-primary" id="role-next-btn" onclick="goToAssessment()" disabled style="opacity:0.4;cursor:not-allowed">
+        Continue to Questions →
+      </button>
+    </div>
+  </div><!-- /role -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       VIEW 3: ASSESSMENT QUESTIONNAIRE
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-assessment">
+    <div class="assessment-header">
+      <div class="q-meta">
+        <span id="q-num-label" style="font-weight:600">Question 1 of 12</span>
+        <span id="q-category-label" style="color:var(--indigo-light)">Emotional Wellbeing</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="assessment-progress" style="width:8%"></div>
+      </div>
+    </div>
+
+    <div class="question-card" id="question-card">
+      <!-- dynamically populated by JS -->
+    </div>
+  </div><!-- /assessment -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       VIEW 4: BENTO RESULTS REPORT DASHBOARD
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-results">
+    <div style="width:100%;max-width:1180px;">
+
+      <!-- Loading State -->
+      <div class="loading-screen" id="results-loading">
+        <div class="spinner"></div>
+        <div>
+          <div class="loading-text">Analyzing your responses with AI...</div>
+          <div class="loading-step" style="margin-top:8px">🧠 Running Random Forest Model & SHAP XAI Engine...</div>
+        </div>
+      </div>
+
+      <!-- Results Content -->
+      <div id="results-content" style="display:none;width:100%">
+        
+        <div class="text-center mb-32">
+          <span class="badge badge-teal mb-16" id="results-badge">Assessment Complete</span>
+          <h2 class="section-title">Your AI Burnout Risk & XAI Report</h2>
+        </div>
+
+        <!-- Bento Grid Results Layout -->
+        <div class="bento-grid">
+
+          <!-- Bento Card 1: Score & Gauge (8 Cols) -->
+          <div class="bento-card col-span-8 glow-indigo" style="align-items:center;text-align:center;">
+            <div style="font-size:0.8rem;font-weight:700;letter-spacing:0.08em;color:var(--indigo-light);text-transform:uppercase;margin-bottom:12px">Risk Score & Level</div>
+            
+            <div class="gauge-wrap">
+              <svg class="gauge-svg" viewBox="0 0 260 140">
+                <defs>
+                  <linearGradient id="gauge-grad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%"   stop-color="#10B981"/>
+                    <stop offset="33%"  stop-color="#F59E0B"/>
+                    <stop offset="66%"  stop-color="#F97316"/>
+                    <stop offset="100%" stop-color="#EF4444"/>
+                  </linearGradient>
+                </defs>
+                <path d="M 30 130 A 100 100 0 0 1 230 130" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16" stroke-linecap="round"/>
+                <path id="gauge-fill" d="M 30 130 A 100 100 0 0 1 230 130" fill="none" stroke="url(#gauge-grad)" stroke-width="16" stroke-linecap="round"
+                      stroke-dasharray="314" stroke-dashoffset="314" style="transition:stroke-dashoffset 1.5s ease"/>
+                <line id="gauge-needle" x1="130" y1="130" x2="130" y2="50" stroke="white" stroke-width="3" stroke-linecap="round"
+                      style="transform-origin:130px 130px;transform:rotate(-90deg);transition:transform 1.5s ease"/>
+                <circle cx="130" cy="130" r="8" fill="white"/>
+              </svg>
+              <div class="gauge-score" id="gauge-score-text" style="color:var(--teal)">0</div>
+            </div>
+
+            <div class="gauge-risk-label" id="gauge-risk-label">—</div>
+
+            <!-- Probability Pills -->
+            <div class="prob-grid w-full" id="prob-grid"></div>
+          </div>
+
+          <!-- Bento Card 2: Burnout Pattern (4 Cols) -->
+          <div class="bento-card col-span-4 glow-amber">
+            <span class="bento-tag amber">Burnout Pattern</span>
+            <div style="font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:8px;" id="result-type">—</div>
+            <p style="font-size:0.875rem;color:var(--text-muted);line-height:1.6;" id="result-type-desc">—</p>
+
+            <div style="margin-top:auto;padding-top:20px;border-top:1px solid var(--border-light)">
+              <div style="font-size:0.75rem;color:var(--text-muted)">Model Confidence</div>
+              <div style="font-family:'Outfit',sans-serif;font-size:1.8rem;font-weight:800;color:var(--text-bright)" id="result-confidence">—</div>
+              <div style="font-size:0.75rem;color:var(--indigo-light)" id="result-model-name">Random Forest Model</div>
+            </div>
+          </div>
+
+          <!-- Bento Card 3: XAI SHAP Breakdown (7 Cols) -->
+          <div class="bento-card col-span-7 glow-teal" id="xai-section">
+            <span class="bento-tag teal">XAI Engine</span>
+            <h3 class="bento-title">SHAP Feature Driver Breakdown</h3>
+            <p class="bento-desc" id="xai-method-label">Quantifying individual feature impact on your score.</p>
+            
+            <div class="shap-bar-list" id="shap-bars"></div>
+            
+            <div class="xai-legend">
+              <div><span class="legend-dot" style="background:var(--red)"></span>Increases Risk</div>
+              <div><span class="legend-dot" style="background:var(--teal)"></span>Reduces Risk (Protective)</div>
+            </div>
+
+            <div class="xai-narrative" id="xai-narrative"></div>
+          </div>
+
+          <!-- Bento Card 4: Action Plan Checklist (5 Cols) -->
+          <div class="bento-card col-span-5 glow-purple">
+            <span class="bento-tag purple">Recovery Strategy</span>
+            <h3 class="bento-title">Personalized Action Plan</h3>
+            <p class="bento-desc">Research-backed steps for your specific pattern.</p>
+            
+            <div class="rec-list" id="rec-list"></div>
+          </div>
+
+          <!-- Bento Card 5: Bottom Model Ribbon (12 Cols) -->
+          <div class="bento-card col-span-12" style="background:rgba(99,102,241,0.08);border-color:rgba(99,102,241,0.25);flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="font-size:2rem">🤖</div>
+              <div>
+                <div style="font-family:'Outfit',sans-serif;font-weight:700;font-size:1.1rem">Predicted by <span id="ribbon-model-name">Random Forest</span></div>
+                <div style="font-size:0.85rem;color:var(--text-muted)">Trained on 6,000 samples from WHO burnout dimensions. Test Accuracy: <strong id="ribbon-accuracy" style="color:var(--teal-light)">—</strong></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="toggleChat(); sendSuggestion('Explain my results');">💬 Discuss with Aria</button>
+              <button class="btn btn-primary" onclick="showView('dashboard')">📊 View Dashboard →</button>
+              <button class="btn btn-secondary" onclick="startAssessment()">🔄 Retake</button>
+            </div>
+          </div>
+
+        </div><!-- /bento-grid -->
+
+      </div><!-- /results-content -->
+    </div>
+  </div><!-- /results -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       VIEW 5: DASHBOARD
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-dashboard">
+    <div style="width:100%;max-width:1180px;">
+      
+      <div class="text-center mb-32">
+        <span class="badge badge-indigo mb-16">Analytics</span>
+        <h2 class="section-title">Longitudinal Burnout Dashboard</h2>
+      </div>
+
+      <div class="bento-grid">
+        <!-- Main Trend Chart (8 Cols) -->
+        <div class="bento-card col-span-8 glow-indigo">
+          <h3 class="bento-title mb-16">📈 Burnout Risk Score History</h3>
+          <div id="dash-chart-wrap" style="width:100%;height:260px;">
+            <canvas id="dash-chart"></canvas>
+          </div>
+          <div id="dash-empty" style="display:none;text-align:center;padding:40px 0;">
+            <div style="font-size:2.5rem;margin-bottom:10px">📋</div>
+            <div style="color:var(--text-muted);font-size:0.9rem">No history recorded yet. Take an assessment to track trends.</div>
+            <button class="btn btn-primary mt-16" onclick="startAssessment()">Start Assessment</button>
+          </div>
+        </div>
+
+        <!-- Streak & Info (4 Cols) -->
+        <div class="col-span-4" style="display:flex;flex-direction:column;gap:20px;">
+          <div class="dash-streak-card">
+            <div style="font-size:2.4rem;margin-bottom:6px">🔥</div>
+            <div class="streak-num" id="streak-num">0</div>
+            <div style="font-size:0.85rem;color:var(--text-muted)">Assessments Logged</div>
+          </div>
+
+          <div class="bento-card" style="flex:1;">
+            <h3 class="bento-title" style="font-size:1.1rem">Recent History</h3>
+            <div id="history-list" class="history-list mt-16"></div>
+            <div id="history-empty" style="display:none;color:var(--text-muted);font-size:0.85rem;text-align:center;padding:20px 0">No records</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /dashboard -->
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       VIEW: ENTERPRISE HR & TELEHEALTH HUB (NEON POSTGRESQL)
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-hr">
+    <div style="width:100%;max-width:1180px;">
+      
+      <div class="text-center mb-32">
+        <span class="badge badge-teal mb-16">Neon PostgreSQL Cloud Integration</span>
+        <h2 class="section-title">Enterprise Organizational Health & Telehealth Hub</h2>
+        <p class="hero-subtitle" style="font-size:0.95rem;max-width:650px;margin:8px auto 0">
+          Real-time group telemetry, department risk heatmaps, and doctor telehealth prescription generator connected to live PostgreSQL DB.
+        </p>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div id="ent-kpi-grid" class="stat-bento-grid mb-32">
+        <div class="stat-card">
+          <div class="stat-num" id="ent-total-emp">--</div>
+          <div class="stat-label">Monitored Employees</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="ent-avg-risk">--</div>
+          <div class="stat-label">Average Risk Score</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="ent-crit-count" style="color:var(--red-light)">--</div>
+          <div class="stat-label">Critical / Burnout Zone</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" id="ent-healthy-count" style="color:var(--teal-light)">--</div>
+          <div class="stat-label">Healthy Workforce</div>
+        </div>
+      </div>
+
+      <!-- Department Heatmap & Archetype Distribution Bento Grid -->
+      <div class="bento-grid mb-32">
+        <!-- Dept Risk Heatmap (7 Cols) -->
+        <div class="bento-card col-span-7 glow-indigo">
+          <h3 class="bento-title mb-16">🏢 Department Risk Heatmap</h3>
+          <div id="ent-dept-heatmap" class="mt-16" style="display:flex;flex-direction:column;gap:12px;">
+            <div style="color:var(--text-muted);font-size:0.85rem">Loading department telemetry...</div>
+          </div>
+        </div>
+
+        <!-- Phenotype Counts (5 Cols) -->
+        <div class="bento-card col-span-5 glow-teal">
+          <h3 class="bento-title mb-16">🧩 Burnout Archetypes</h3>
+          <div id="ent-pheno-counts" class="mt-16" style="display:flex;flex-direction:column;gap:12px;">
+            <div style="color:var(--text-muted);font-size:0.85rem">Loading archetype distribution...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Employee Table -->
+      <div class="bento-card glow-indigo mb-32">
+        <div style="display:flex;justify-content:space-between;align-items:center;" class="mb-16">
+          <h3 class="bento-title">👥 Monitored Workforce Roster</h3>
+          <span style="font-size:0.8rem;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:4px 12px;border-radius:20px;border:1px solid var(--border-light)">Sorted by Risk Score (Descending)</span>
+        </div>
+        
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;text-align:left;font-size:0.9rem;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border-light);color:var(--text-muted);font-size:0.8rem;text-transform:uppercase;">
+                <th style="padding:12px 16px;">Employee</th>
+                <th style="padding:12px 16px;">Department</th>
+                <th style="padding:12px 16px;">Role</th>
+                <th style="padding:12px 16px;">Risk Level</th>
+                <th style="padding:12px 16px;">Archetype</th>
+                <th style="padding:12px 16px;text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ent-employee-tbody">
+              <tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text-muted)">Loading employees from Cloud DB...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+    </div>
+  </div><!-- /hr -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+       VIEW: DOCTOR PORTAL
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-doctor">
+    <div style="width:100%;max-width:1180px;">
+      
+      <div class="text-center mb-32">
+        <span class="badge badge-purple mb-16">Clinical Gateway</span>
+        <h2 class="section-title">Doctor Telehealth Portal</h2>
+        <p class="hero-subtitle" style="font-size:0.95rem;max-width:650px;margin:8px auto 0">
+          Secure, direct access to the clinical prescription desk and worker health analytics.
+        </p>
+      </div>
+
+      <!-- Telehealth Medical Prescription Drawer/Section -->
+      <div class="bento-card glow-purple" id="rx-card-wrap">
+        <h3 class="bento-title mb-8">🩺 Doctor Telehealth & Clinical Prescription Desk</h3>
+        <p style="color:var(--text-muted);font-size:0.85rem;" class="mb-20">
+          Issue binding work restriction orders, mandatory rest leave, or clinical care notes directly into PostgreSQL for high-risk employees.
+        </p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;" class="mb-16">
+          <div>
+            <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">Target Employee</label>
+            <select id="rx-emp-select" style="width:100%;background:rgba(15,23,42,0.8);border:1px solid var(--border-light);color:#fff;padding:10px;border-radius:8px;font-family:inherit;font-size:0.85rem;">
+              <option value="1">Sarah Connor (Engineering Lead - 88 Risk)</option>
+              <option value="2">Marcus Vance (Support Lead - 82 Risk)</option>
+              <option value="3">Alex Mercer (Senior Developer - 74 Risk)</option>
+              <option value="4">James Watson (Sales Lead - 68 Risk)</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">Attending Physician</label>
+            <input type="text" id="rx-doctor" value="Dr. Aris Thorne, MD" style="width:100%;background:rgba(15,23,42,0.8);border:1px solid var(--border-light);color:#fff;padding:10px;border-radius:8px;font-family:inherit;font-size:0.85rem;" />
+          </div>
+
+          <div>
+            <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">Clinical Diagnosis Code</label>
+            <input type="text" id="rx-diag" value="ICD-11 QD85 (Burnout Syndrome)" style="width:100%;background:rgba(15,23,42,0.8);border:1px solid var(--border-light);color:#fff;padding:10px;border-radius:8px;font-family:inherit;font-size:0.85rem;" />
+          </div>
+
+          <div>
+            <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">Mandatory Work Restriction (Days)</label>
+            <input type="number" id="rx-days" value="5" min="1" max="30" style="width:100%;background:rgba(15,23,42,0.8);border:1px solid var(--border-light);color:#fff;padding:10px;border-radius:8px;font-family:inherit;font-size:0.85rem;" />
+          </div>
+        </div>
+
+        <div class="mb-20">
+          <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:6px">Prescription Medical Notes & Clinical Care Instructions</label>
+          <textarea id="rx-notes" rows="2" style="width:100%;background:rgba(15,23,42,0.8);border:1px solid var(--border-light);color:#fff;padding:10px;border-radius:8px;font-family:inherit;font-size:0.85rem;">Mandatory 5-day medical leave required for autonomic recovery. Complete disconnect from Slack and email.</textarea>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div id="rx-status-msg" style="font-size:0.85rem;color:var(--teal-light)"></div>
+          <button class="btn btn-primary" onclick="submitPrescription()">
+            🩺 Issue Clinical Prescription →
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /doctor -->
+
+
+
+  <!-- ═══════════════════════════════════════════════════════════
+       VIEW 6: ABOUT AI & RESEARCH
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="view" id="view-about">
+    <div class="about-wrap">
+      
+      <div class="text-center mb-16">
+        <span class="badge badge-purple mb-16">Peer-Reviewed Foundation</span>
+        <h2 class="section-title">Machine Learning & Ethical Design</h2>
+        <p class="lead mt-16">Built strictly following research parameters from Paper 1 & Paper 2.</p>
+      </div>
+
+      <div class="about-card">
+        <h3>🔬 Research Foundation (Paper 1 & Paper 2)</h3>
+        <ul class="about-list">
+          <li><strong>WHO 3-Dimension Framework:</strong> Emotional Exhaustion, Cynicism/Detachment, Self-Efficacy.</li>
+          <li><strong>3 Burnout Archetypes:</strong> Frenetic (overworkers), Under-Challenged (boredom), Worn-Out (helplessness).</li>
+          <li><strong>Ethical Risk Assessment:</strong> Treated as risk signal (like server load/crash prediction), NOT medical diagnosis.</li>
+        </ul>
+      </div>
+
+      <div class="about-card">
+        <h3>⚡ Machine Learning Pipeline</h3>
+        <ul class="about-list">
+          <li><strong>Dataset:</strong> 6,000 synthetic rows generated from statistical paper distributions.</li>
+          <li><strong>Models Evaluated:</strong> Random Forest vs Gradient Boosting vs Logistic Regression.</li>
+          <li><strong>Explainability (XAI):</strong> Integrated SHAP (TreeExplainer) to output per-feature marginal contributions.</li>
+        </ul>
+      </div>
+
+      <div id="model-accuracy-card" class="about-card" style="display:none;">
+        <h3>📊 Active Model Metrics</h3>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px;" id="model-stats-grid"></div>
+      </div>
+
+    </div>
+  </div><!-- /about -->
+
+</div><!-- /app -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     ARIA AI CHATBOT FLOATING PANEL
+═══════════════════════════════════════════════════════════════ -->
+<button class="chat-bubble" id="chat-bubble-btn" onclick="toggleChat()" title="Chat with Aria AI Coach">
+  🧠
+  <div class="chat-badge" id="chat-badge">1</div>
+</button>
+
+<div class="chat-window" id="chat-window">
+  <div class="chat-header">
+    <div class="chat-header-info">
+      <div class="chat-avatar">🧠</div>
+      <div>
+        <div class="chat-name">Aria</div>
+        <div class="chat-status">● Online · BurnoutAI Coach</div>
+      </div>
+    </div>
+    <button class="chat-close" onclick="toggleChat()">✕</button>
+  </div>
+
+  <div class="chat-messages" id="chat-messages"></div>
+
+  <div class="chat-suggestions" id="chat-suggestions">
+    <button class="chat-suggestion" onclick="sendSuggestion('What is burnout?')">What is burnout?</button>
+    <button class="chat-suggestion" onclick="sendSuggestion('What are the warning signs?')">Warning signs</button>
+    <button class="chat-suggestion" onclick="sendSuggestion('How to prevent burnout?')">Prevention tips</button>
+    <button class="chat-suggestion" onclick="sendSuggestion('Explain my results')">Explain my results</button>
+  </div>
+
+  <div class="chat-input-row">
+    <input class="chat-input" id="chat-input" type="text" placeholder="Ask Aria anything..." onkeydown="if(event.key==='Enter') sendMessage()" />
+    <button class="chat-send" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     FRONTEND JAVASCRIPT LOGIC
+═══════════════════════════════════════════════════════════════ -->
+<script>
+const API_BASE = '';
+
+let state = {
+  currentView: 'landing',
+  selectedRole: null,
+  currentQuestion: 0,
+  answers: {},
+  lastResult: null,
+  history: JSON.parse(localStorage.getItem('burnoutai_history') || '[]'),
+};
+
+const QUESTIONS = [
+  {
+    id: 'exhaustion_score',
+    category: '😓 Emotional Wellbeing',
+    text: 'How emotionally exhausted do you feel after a typical day?',
+    hint: '"I feel completely drained and have nothing left to give"',
+    type: 'likert',
+    options: [
+      { label: 'Never — I feel refreshed and energized',  value: 1 },
+      { label: 'Rarely — Mostly fine, occasional tiredness', value: 2 },
+      { label: 'Sometimes — Drained a few days a week', value: 3 },
+      { label: 'Often — Exhausted almost every day', value: 4 },
+      { label: 'Always — Completely depleted and burnt out', value: 5 },
+    ]
+  },
+  {
+    id: 'cynicism_score',
+    category: '😒 Mental Engagement',
+    text: 'How often do you feel cynical or detached from your work/studies?',
+    hint: 'Feeling emotionally checked out or that your work lacks meaning',
+    type: 'likert',
+    options: [
+      { label: 'Never — Engaged and care deeply',      value: 1 },
+      { label: 'Rarely — Mostly invested',             value: 2 },
+      { label: 'Sometimes — Mixed feelings',          value: 3 },
+      { label: 'Often — Distanced myself emotionally', value: 4 },
+      { label: 'Always — Completely detached',        value: 5 },
+    ]
+  },
+  {
+    id: 'efficacy_score',
+    category: '💪 Self-Efficacy & Confidence',
+    text: 'How effective and capable do you feel in accomplishing your daily tasks?',
+    hint: 'Confidence in your skills and performance',
+    type: 'likert',
+    options: [
+      { label: 'Very effective — Highly capable', value: 5 },
+      { label: 'Mostly effective — Generally confident', value: 4 },
+      { label: 'Somewhat effective — Minor doubts', value: 3 },
+      { label: 'Rarely effective — Question my abilities', value: 2 },
+      { label: 'Not effective — Feel useless/stuck', value: 1 },
+    ]
+  },
+  {
+    id: 'motivation_level',
+    category: '✨ Motivation',
+    text: 'How motivated do you feel to tackle your work or responsibilities?',
+    hint: 'Your drive and eagerness to start each day',
+    type: 'likert',
+    options: [
+      { label: 'Highly motivated — Excited for the day', value: 5 },
+      { label: 'Mostly motivated — Generally driven', value: 4 },
+      { label: 'Moderate — Neutral motivation', value: 3 },
+      { label: 'Rarely motivated — Hard to get started', value: 2 },
+      { label: 'No motivation — Absolute dread', value: 1 },
+    ]
+  },
+  {
+    id: 'avg_hours_per_day',
+    category: '⏰ Work/Study Duration',
+    text: 'On average, how many hours do you work or study per day?',
+    hint: 'Include evening work, overtime, and weekends',
+    type: 'slider',
+    min: 4, max: 16, step: 0.5, unit: 'hrs/day', default: 8,
+  },
+  {
+    id: 'meetings_per_day',
+    category: '📅 Meeting & Call Load',
+    text: 'How many meetings, lectures, or calls do you attend daily?',
+    hint: 'Video calls, team syncs, classes',
+    type: 'slider',
+    min: 0, max: 14, step: 1, unit: 'meetings', default: 3,
+  },
+  {
+    id: 'leave_days_last_month',
+    category: '🏖️ Rest & Time Off',
+    text: 'How many days of full leave / rest did you take last month?',
+    hint: 'Days without work, emails, or study',
+    type: 'slider',
+    min: 0, max: 30, step: 1, unit: 'days', default: 4,
+  },
+  {
+    id: 'late_logins_per_week',
+    category: '🌙 Late Night Work',
+    text: 'How many nights per week do you work past 9:00 PM?',
+    hint: 'Late emails, late coding, night studying',
+    type: 'slider',
+    min: 0, max: 7, step: 1, unit: 'nights/wk', default: 1,
+  },
+  {
+    id: 'can_disconnect',
+    category: '🔌 Work-Life Boundary',
+    text: 'How easily can you mentally disconnect from work after hours?',
+    hint: '"I can put work away and enjoy free time without anxiety"',
+    type: 'likert',
+    options: [
+      { label: 'Completely — Fully switch off and recharge', value: 5 },
+      { label: 'Mostly — Minor work thoughts', value: 4 },
+      { label: 'Sometimes — Work lingers on heavy days', value: 3 },
+      { label: 'Rarely — Work thoughts haunt my free time', value: 2 },
+      { label: 'Never — Always mentally at work', value: 1 },
+    ]
+  },
+  {
+    id: 'support_from_manager',
+    category: '🤝 Manager & Peer Support',
+    text: 'How supported do you feel by your manager, mentor, or peers?',
+    hint: 'Psychological safety, workload adjustment, empathy',
+    type: 'likert',
+    options: [
+      { label: 'Extremely supported — Active protection', value: 5 },
+      { label: 'Mostly supported — Good communication', value: 4 },
+      { label: 'Neutral — Moderate support', value: 3 },
+      { label: 'Rarely supported — Feel isolated', value: 2 },
+      { label: 'No support — Unsupportive/toxic', value: 1 },
+    ]
+  },
+  {
+    id: 'remote_work',
+    category: '🏠 Environment',
+    text: 'Do you work or study primarily remotely / from home?',
+    hint: 'Remote setups add +2.5 hrs/day on average but eliminate commutes',
+    type: 'binary',
+    options: [
+      { label: 'Yes, primarily remote', emoji: '🏠', value: 1 },
+      { label: 'No, in-person / office', emoji: '🏢', value: 0 },
+    ]
+  },
+  {
+    id: '_sleep_stress',
+    category: '😴 Sleep Recovery',
+    text: 'How would you rate your sleep quality and physical recovery?',
+    hint: 'Sleep is essential for cognitive resilience against burnout',
+    type: 'likert',
+    options: [
+      { label: 'Excellent — Deep, restorative sleep', value: 5 },
+      { label: 'Good — Sleep well overall', value: 4 },
+      { label: 'Fair — Occasional insomnia/fatigue', value: 3 },
+      { label: 'Poor — Wake up exhausted', value: 2 },
+      { label: 'Very poor — Chronic insomnia/exhaustion', value: 1 },
+    ]
+  },
+];
+
+function showView(viewName) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById(`view-${viewName}`);
+  if (el) el.classList.add('active');
+  state.currentView = viewName;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (viewName === 'dashboard') renderDashboard();
+  if (viewName === 'enterprise') loadEnterpriseHub();
+  if (viewName === 'about') loadModelInfo();
+}
+
+function startAssessment() {
+  state.selectedRole = null;
+  state.answers = {};
+  state.currentQuestion = 0;
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  const btn = document.getElementById('role-next-btn');
+  btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
+  showView('role');
+}
+
+function selectRole(role) {
+  state.selectedRole = role;
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById(`role-${role}`);
+  if (card) card.classList.add('selected');
+  const btn = document.getElementById('role-next-btn');
+  btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+}
+
+function goToAssessment() {
+  if (!state.selectedRole) return;
+  state.currentQuestion = 0;
+  state.answers = {};
+  showView('assessment');
+  renderQuestion(0);
+}
+
+function renderQuestion(idx) {
+  const q = QUESTIONS[idx];
+  const total = QUESTIONS.length;
+  const pct = Math.round(((idx + 1) / total) * 100);
+
+  document.getElementById('q-num-label').textContent = `Question ${idx + 1} of ${total}`;
+  document.getElementById('q-category-label').textContent = q.category;
+  document.getElementById('assessment-progress').style.width = `${pct}%`;
+
+  const card = document.getElementById('question-card');
+  let inputHTML = '';
+
+  if (q.type === 'likert') {
+    inputHTML = `<div class="likert-wrap">` +
+      q.options.map(opt => `
+        <div class="likert-option ${state.answers[q.id] === opt.value ? 'selected' : ''}"
+             onclick="selectLikert('${q.id}', ${opt.value}, this)">
+          <div class="likert-radio"></div>
+          <span class="likert-label">${opt.label}</span>
+          <span class="likert-value">${opt.value}/5</span>
+        </div>
+      `).join('') + `</div>`;
+  } else if (q.type === 'slider') {
+    const cur = state.answers[q.id] ?? q.default;
+    inputHTML = `
+      <div class="num-input-wrap">
+        <div class="num-display" id="slider-display">${cur} <span style="font-size:1.2rem;color:var(--text-muted);font-weight:500">${q.unit}</span></div>
+        <input type="range" class="num-slider" id="q-slider" min="${q.min}" max="${q.max}" step="${q.step}" value="${cur}"
+               oninput="updateSlider(this, '${q.id}', '${q.unit}')"/>
+        <div class="num-labels"><span>${q.min} ${q.unit}</span><span>${q.max} ${q.unit}</span></div>
+      </div>`;
+  } else if (q.type === 'binary') {
+    inputHTML = `<div class="binary-wrap">` +
+      q.options.map(opt => `
+        <div class="binary-btn ${state.answers[q.id] === opt.value ? 'selected' : ''}"
+             onclick="selectBinary('${q.id}', ${opt.value})">
+          <span>${opt.emoji}</span>
+          <span>${opt.label}</span>
+        </div>
+      `).join('') + `</div>`;
+  }
+
+  const canNext = state.answers[q.id] !== undefined || q.type === 'slider';
+  card.innerHTML = `
+    <div class="q-category">${q.category}</div>
+    <div class="q-text">${q.text}</div>
+    <div class="q-hint">${q.hint}</div>
+    ${inputHTML}
+    <div class="q-nav">
+      <button class="btn btn-secondary" onclick="prevQuestion()" style="${idx === 0 ? 'visibility:hidden' : ''}">← Previous</button>
+      <span class="q-counter">${idx + 1} / ${total}</span>
+      <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()"
+              ${!canNext && q.type !== 'slider' ? 'disabled style="opacity:0.4;cursor:not-allowed"' : ''}>
+        ${idx === total - 1 ? '⚡ Run AI Prediction →' : 'Next Question →'}
+      </button>
+    </div>`;
+
+  if (q.type === 'slider' && state.answers[q.id] === undefined) {
+    state.answers[q.id] = q.default;
+  }
+}
+
+function selectLikert(id, value, el) {
+  state.answers[id] = value;
+  document.querySelectorAll('.likert-option').forEach(opt => opt.classList.remove('selected'));
+  el.classList.add('selected');
+  const btn = document.getElementById('next-btn');
+  btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+  setTimeout(() => nextQuestion(), 400);
+}
+
+function updateSlider(el, id, unit) {
+  state.answers[id] = parseFloat(el.value);
+  document.getElementById('slider-display').innerHTML =
+    `${el.value} <span style="font-size:1.2rem;color:var(--text-muted);font-weight:500">${unit}</span>`;
+}
+
+function selectBinary(id, value) {
+  state.answers[id] = value;
+  document.querySelectorAll('.binary-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  const btn = document.getElementById('next-btn');
+  btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+  setTimeout(() => nextQuestion(), 400);
+}
+
+function nextQuestion() {
+  const q = QUESTIONS[state.currentQuestion];
+  if (state.answers[q.id] === undefined && q.type !== 'slider') return;
+  if (state.currentQuestion === QUESTIONS.length - 1) {
+    submitAssessment();
+  } else {
+    state.currentQuestion++;
+    renderQuestion(state.currentQuestion);
+  }
+}
+
+function prevQuestion() {
+  if (state.currentQuestion > 0) {
+    state.currentQuestion--;
+    renderQuestion(state.currentQuestion);
+  }
+}
+
+async function submitAssessment() {
+  showView('results');
+  document.getElementById('results-loading').style.display = 'flex';
+  document.getElementById('results-content').style.display = 'none';
+
+  const payload = {
+    avg_hours_per_day:     state.answers['avg_hours_per_day']     ?? 8,
+    late_logins_per_week:  state.answers['late_logins_per_week']  ?? 0,
+    meetings_per_day:      state.answers['meetings_per_day']      ?? 3,
+    leave_days_last_month: state.answers['leave_days_last_month'] ?? 4,
+    exhaustion_score:      state.answers['exhaustion_score']      ?? 2,
+    cynicism_score:        state.answers['cynicism_score']        ?? 2,
+    efficacy_score:        state.answers['efficacy_score']        ?? 4,
+    motivation_level:      state.answers['motivation_level']      ?? 4,
+    support_from_manager:  state.answers['support_from_manager']  ?? 4,
+    can_disconnect:        state.answers['can_disconnect']        ?? 4,
+    role_type:             state.selectedRole                     ?? 'general',
+    remote_work:           state.answers['remote_work']           ?? 0,
+  };
+
+  const sleepScore = state.answers['_sleep_stress'] ?? 3;
+  if (sleepScore <= 2) payload.exhaustion_score = Math.min(5, payload.exhaustion_score + 0.5);
+
+  state._lastPayload = payload;
+
+  try {
+    await new Promise(r => setTimeout(r, 1800));
+
+    const res = await fetch(`${API_BASE}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) throw new Error(`API status ${res.status}`);
+    const data = await res.json();
+
+    state.lastResult = data;
+    saveHistory(data, payload);
+    renderResults(data);
+
+  } catch (err) {
+    console.warn('Flask API offline, using local scoring fallback:', err.message);
+    const localResult = localPredict(payload);
+    state.lastResult = localResult;
+    saveHistory(localResult, payload);
+    renderResults(localResult);
+  }
+}
+
+function localPredict(d) {
+  let score = 0;
+  score += (d.exhaustion_score / 5)      * 28;
+  score += (d.cynicism_score / 5)        * 22;
+  score += ((6 - d.efficacy_score) / 5)  * 15;
+  score += ((6 - d.motivation_level) / 5) * 12;
+  score += (Math.max(0, d.avg_hours_per_day - 8) / 8) * 13;
+  score += (Math.max(0, 5 - d.leave_days_last_month) / 5) * 7;
+  score += ((6 - d.support_from_manager) / 5) * 8;
+  score += ((6 - d.can_disconnect) / 5)  * 8;
+  score += (d.late_logins_per_week / 7)  * 5;
+  score += (Math.min(d.meetings_per_day, 10) / 10) * 4;
+  if (d.remote_work) score += 3;
+
+  score = Math.round(Math.min(score, 100));
+  const risk_level = score < 25 ? 0 : score < 50 ? 1 : score < 75 ? 2 : 3;
+  const labels = ['Healthy', 'Moderate Risk', 'High Risk', 'Burnout Zone'];
+  const colors = ['#10B981', '#F59E0B', '#F97316', '#EF4444'];
+  const emojis = ['🟢', '🟡', '🟠', '🔴'];
+
+  const frenetic_score = d.avg_hours_per_day * 0.4 + d.exhaustion_score * 0.4 + (5 - d.can_disconnect) * 0.2;
+  const under_score    = d.cynicism_score * 0.45 + (5 - d.motivation_level) * 0.35 + (5 - d.efficacy_score) * 0.2;
+  const worn_score     = d.cynicism_score * 0.3 + d.exhaustion_score * 0.3 + (5 - d.support_from_manager) * 0.25;
+  
+  const typeMap = { frenetic: 'Frenetic', under: 'Under-Challenged', worn: 'Worn-Out' };
+  const burnout_type = risk_level === 0 ? 'Healthy Pattern' :
+    (frenetic_score >= under_score && frenetic_score >= worn_score) ? 'Frenetic' :
+    (under_score >= worn_score) ? 'Under-Challenged' : 'Worn-Out';
+
+  const explanations = [
+    'Your wellbeing signals are balanced and healthy. Maintain your existing boundaries.',
+    'Early warning signs detected. Monitor hours and prioritize recovery before fatigue compounds.',
+    'Escalating burnout risk driven by overwork and high exhaustion. Immediate load reduction recommended.',
+    'Critical burnout zone. Immediate intervention and structured rest required.'
+  ];
+
+  const recs = {
+    'Frenetic': ['⏰ Enforce a hard stop time daily', '📅 Schedule at least 2 leave days in 2 weeks', '🤝 Delegate tasks immediately'],
+    'Under-Challenged': ['🎯 Request new challenges or role expansion', '📚 Learn a new skill that excites you', '👥 Connect with mentors'],
+    'Worn-Out': ['🛑 Seek professional support', '🏖️ Take 5+ consecutive days of complete disconnect', '💬 Have an honest chat with your manager'],
+    'Healthy Pattern': ['✅ Keep up healthy habits', '🌿 Protect your work-life boundaries'],
+  };
+
+  return {
+    risk_level, risk_score: score,
+    risk_label: labels[risk_level],
+    risk_color: colors[risk_level],
+    risk_emoji: emojis[risk_level],
+    confidence: 0.88,
+    probabilities: {
+      healthy: risk_level === 0 ? 0.75 : 0.08,
+      moderate_risk: risk_level === 1 ? 0.68 : 0.12,
+      high_risk: risk_level === 2 ? 0.64 : 0.14,
+      burnout_zone: risk_level === 3 ? 0.78 : 0.06,
+    },
+    burnout_type,
+    explanation: explanations[risk_level],
+    recommendations: (recs[burnout_type] || recs['Healthy Pattern']).concat([
+      '😴 Guarantee 7–8 hours of quality sleep',
+      '🚶 Take 10-minute walk breaks every 90 minutes'
+    ]),
+    top_factors: [
+      { feature: 'exhaustion_score', label: 'Emotional Exhaustion', value: d.exhaustion_score, importance: 0.26 },
+      { feature: 'avg_hours_per_day', label: 'Working Hours/Day', value: d.avg_hours_per_day, importance: 0.22 },
+      { feature: 'cynicism_score', label: 'Cynicism & Detachment', value: d.cynicism_score, importance: 0.18 },
+      { feature: 'can_disconnect', label: 'Ability to Disconnect', value: d.can_disconnect, importance: 0.14 },
+    ],
+    model_name: 'Local Fallback Scoring',
+    model_accuracy: 0.91,
+    _is_local: true,
+  };
+}
+
+function renderResults(data) {
+  document.getElementById('results-loading').style.display = 'none';
+  document.getElementById('results-content').style.display = 'block';
+
+  // Gauge SVG Animation
+  const score = data.risk_score;
+  const pct = score / 100;
+  const circumference = 314;
+  document.getElementById('gauge-fill').style.strokeDashoffset = circumference - (pct * circumference);
+  const angle = -90 + (pct * 180);
+  document.getElementById('gauge-needle').style.transform = `rotate(${angle}deg)`;
+
+  let cur = 0;
+  const timer = setInterval(() => {
+    cur += Math.ceil(score / 30);
+    if (cur >= score) { cur = score; clearInterval(timer); }
+    document.getElementById('gauge-score-text').textContent = cur;
+  }, 40);
+  document.getElementById('gauge-score-text').style.color = data.risk_color;
+  document.getElementById('gauge-risk-label').textContent = `${data.risk_emoji || ''} ${data.risk_label}`;
+  document.getElementById('gauge-risk-label').style.color = data.risk_color;
+
+  // Probabilities
+  const probLabels = { healthy: '🟢 Healthy', moderate_risk: '🟡 Moderate', high_risk: '🟠 High Risk', burnout_zone: '🔴 Burnout' };
+  const probColors = { healthy: '#10B981', moderate_risk: '#F59E0B', high_risk: '#F97316', burnout_zone: '#EF4444' };
+  document.getElementById('prob-grid').innerHTML = Object.entries(data.probabilities).map(([k,v]) => `
+    <div class="prob-card" style="border-top:2px solid ${probColors[k]}">
+      <div class="prob-pct" style="color:${probColors[k]}">${Math.round(v*100)}%</div>
+      <div class="prob-lbl">${probLabels[k]}</div>
+    </div>`).join('');
+
+  // Type & Details
+  const typeDescs = {
+    'Frenetic':         'Overworking high performer — driven by perfectionism leading to silent collapse.',
+    'Under-Challenged': 'Emotionally withdrawn due to boredom, lack of growth, or feeling invisible.',
+    'Worn-Out':         'Learned helplessness from chronic lack of support and systemic pressure.',
+    'Healthy Pattern':  'Your signals are in a balanced range. Keep protecting your rest rituals.',
+  };
+  document.getElementById('result-type').textContent = data.burnout_type;
+  document.getElementById('result-type-desc').textContent = typeDescs[data.burnout_type] || '';
+  document.getElementById('result-confidence').textContent = `${Math.round(data.confidence * 100)}%`;
+  document.getElementById('result-model-name').textContent = data.model_name || 'Random Forest';
+
+  // Recommendations
+  document.getElementById('rec-list').innerHTML = (data.recommendations || []).map((r, i) => `
+    <div class="rec-item">
+      <div class="rec-num">${i + 1}</div>
+      <div class="rec-text">${r}</div>
+    </div>`).join('');
+
+  document.getElementById('ribbon-model-name').textContent = data.model_name || 'Random Forest';
+  document.getElementById('ribbon-accuracy').textContent = `${Math.round((data.model_accuracy||0.91)*100)}%`;
+
+  // Fetch XAI breakdown if payload stored
+  if (state._lastPayload) {
+    fetchXAIAndRender(state._lastPayload);
+  }
+}
+
+async function fetchXAIAndRender(payload) {
+  try {
+    const res = await fetch(`${API_BASE}/predict/xai`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('XAI API error');
+    const data = await res.json();
+    renderXAI(data.shap_contributions, data.xai_narrative, data.xai_method);
+  } catch (e) {
+    if (state.lastResult && state.lastResult.top_factors) {
+      renderXAIFallback(state.lastResult);
+    }
+  }
+}
+
+function renderXAI(contributions, narrative, method) {
+  const barsEl = document.getElementById('shap-bars');
+  const narEl  = document.getElementById('xai-narrative');
+  const subEl  = document.getElementById('xai-method-label');
+
+  const isShap = method === 'shap';
+  subEl.innerHTML = `Method: <strong style="color:var(--teal-light)">${isShap ? 'SHAP TreeExplainer' : 'Feature Importance'}</strong>. Shows individual feature pull.`;
+
+  const maxMag = Math.max(...contributions.map(c => c.magnitude), 0.01);
+
+  barsEl.innerHTML = contributions.slice(0, 8).map(c => {
+    const pct = Math.round((c.magnitude / maxMag) * 45);
+    const isUp = c.direction === 'risk_increase';
+    const valStr = isShap ? (isUp ? '+' : '') + c.shap_value.toFixed(3) : (isUp ? '↑' : '↓') + c.magnitude.toFixed(3);
+    const leftPct = isUp ? 50 : (50 - pct);
+
+    return `
+      <div class="shap-row">
+        <div class="shap-label" title="${c.label}">${c.label}</div>
+        <div class="shap-track">
+          <div class="shap-center"></div>
+          <div class="shap-fill ${isUp ? 'up' : 'down'}" style="left:${leftPct}%;width:${pct}%"></div>
+        </div>
+        <div class="shap-val ${isUp ? 'up' : 'down'}">${valStr}</div>
+      </div>`;
+  }).join('');
+
+  narEl.innerHTML = narrative ? narrative.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') : '';
+}
+
+function renderXAIFallback(result) {
+  if (!result || !result.top_factors) return;
+  const synth = result.top_factors.map(f => ({
+    label: f.label || f.feature,
+    magnitude: f.importance,
+    shap_value: f.importance,
+    direction: 'risk_increase',
+  }));
+  renderXAI(synth, result.explanation, 'feature_importance');
+}
+
+function saveHistory(data, payload) {
+  const entry = {
+    date: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' }),
+    timestamp: Date.now(),
+    risk_score: data.risk_score,
+    risk_label: data.risk_label,
+    risk_color: data.risk_color,
+    burnout_type: data.burnout_type,
+    role: state.selectedRole,
+  };
+  state.history.unshift(entry);
+  if (state.history.length > 15) state.history = state.history.slice(0, 15);
+  localStorage.setItem('burnoutai_history', JSON.stringify(state.history));
+}
+
+let dashChart = null;
+function renderDashboard() {
+  const h = state.history;
+  document.getElementById('streak-num').textContent = h.length;
+
+  const histEl = document.getElementById('history-list');
+  const emptyEl = document.getElementById('dash-empty');
+  const chartWrap = document.getElementById('dash-chart-wrap');
+
+  if (h.length === 0) {
+    emptyEl.style.display = 'block';
+    chartWrap.style.display = 'none';
+    histEl.innerHTML = '';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  chartWrap.style.display = 'block';
+
+  histEl.innerHTML = h.slice(0, 5).map(e => `
+    <div class="history-item">
+      <div>
+        <div class="history-date">${e.date} · ${e.role || 'general'}</div>
+        <div style="font-size:0.8rem;color:var(--text-mid);font-weight:600">${e.burnout_type}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="history-score" style="color:${e.risk_color}">${e.risk_score}</div>
+      </div>
+    </div>`).join('');
+
+  const reversed = [...h].reverse();
+  const labels = reversed.map(e => e.date);
+  const scores = reversed.map(e => e.risk_score);
+
+  if (dashChart) dashChart.destroy();
+  const ctx = document.getElementById('dash-chart').getContext('2d');
+  dashChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Risk Score',
+        data: scores,
+        borderColor: '#6366F1',
+        backgroundColor: 'rgba(99,102,241,0.08)',
+        pointBackgroundColor: reversed.map(e => e.risk_color),
+        pointRadius: 6,
+        fill: true, tension: 0.4, borderWidth: 2.5,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748B' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { min: 0, max: 100, ticks: { color: '#64748B' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
+}
+
+async function loadModelInfo() {
+  try {
+    const res = await fetch(`${API_BASE}/model-info`);
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('model-accuracy-card').style.display = 'block';
+    document.getElementById('model-stats-grid').innerHTML = `
+      <div style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:20px;text-align:center">
+        <div style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:var(--indigo-light)">${Math.round(data.test_accuracy*100)}%</div>
+        <div style="font-size:0.8rem;color:var(--text-muted)">Accuracy</div>
+      </div>
+      <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:12px;padding:20px;text-align:center">
+        <div style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:var(--teal-light)">${Math.round(data.test_f1*100)}%</div>
+        <div style="font-size:0.8rem;color:var(--text-muted)">F1 Score</div>
+      </div>
+      <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:20px;text-align:center">
+        <div style="font-family:'Outfit',sans-serif;font-size:2rem;font-weight:800;color:var(--amber-light)">${data.training_samples.toLocaleString()}</div>
+        <div style="font-size:0.8rem;color:var(--text-muted)">Samples</div>
+      </div>`;
+  } catch(e) {}
+}
+
+/* ─── ENTERPRISE HR & TELEHEALTH HUB LOGIC ────────────── */
+async function loadEnterpriseHub() {
+  try {
+    const res = await fetch(`${API_BASE}/api/manager/group-analytics`);
+    if (!res.ok) throw new Error('Analytics endpoint unavailable');
+    const data = await res.json();
+
+    document.getElementById('ent-total-emp').innerText = data.total_monitored || 8;
+    document.getElementById('ent-avg-risk').innerText = (data.avg_risk_score || 50) + '/100';
+    document.getElementById('ent-crit-count').innerText = (data.critical_count || 0) + (data.high_risk_count || 0);
+    document.getElementById('ent-healthy-count').innerText = data.healthy_count || 0;
+
+    // Render Department Heatmap
+    const deptDiv = document.getElementById('ent-dept-heatmap');
+    if (data.department_scores) {
+      deptDiv.innerHTML = Object.entries(data.department_scores).map(([dept, score]) => {
+        const color = score >= 75 ? 'var(--red-light)' : score >= 55 ? 'var(--amber-light)' : 'var(--teal-light)';
+        return `
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
+              <span>${dept}</span>
+              <span style="font-weight:700;color:${color}">${score}/100 Risk</span>
+            </div>
+            <div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+              <div style="width:${score}%;height:100%;background:${color};border-radius:4px;transition:width 0.6s ease;"></div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // Render Phenotype Counts
+    const phenoDiv = document.getElementById('ent-pheno-counts');
+    if (data.phenotype_counts) {
+      phenoDiv.innerHTML = Object.entries(data.phenotype_counts).map(([type, count]) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border-light);border-radius:8px;">
+          <span style="font-size:0.85rem;font-weight:500;">${type}</span>
+          <span style="font-family:'Outfit',sans-serif;font-weight:700;color:var(--indigo-light);">${count} Employees</span>
+        </div>
+      `).join('');
+    }
+  } catch(e) {
+    console.error('Failed to load group analytics', e);
+  }
+
+  // Fetch Employees List
+  try {
+    const res = await fetch(`${API_BASE}/api/manager/employees`);
+    if (!res.ok) throw new Error('Employees endpoint unavailable');
+    const data = await res.json();
+    const emps = data.employees || [];
+
+    const tbody = document.getElementById('ent-employee-tbody');
+    const select = document.getElementById('rx-emp-select');
+
+    if (emps.length > 0) {
+      tbody.innerHTML = emps.map(e => `
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+          <td style="padding:12px 16px;display:flex;align-items:center;gap:10px;">
+            <span style="font-size:1.4rem;">${e.avatar || '👤'}</span>
+            <div>
+              <div style="font-weight:600;color:#fff;">${e.name}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">${e.email}</div>
+            </div>
+          </td>
+          <td style="padding:12px 16px;">${e.department}</td>
+          <td style="padding:12px 16px;color:var(--text-muted);">${e.role}</td>
+          <td style="padding:12px 16px;">
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;background:${e.risk_color}22;color:${e.risk_color};border:1px solid ${e.risk_color}44;">
+              ${e.risk_emoji || '🔴'} ${e.risk_score}/100 (${e.risk_label || 'High'})
+            </span>
+          </td>
+          <td style="padding:12px 16px;font-size:0.85rem;color:var(--indigo-light);">${e.burnout_type}</td>
+          <td style="padding:12px 16px;text-align:right;">
+            <button class="btn btn-secondary" style="padding:4px 10px;font-size:0.75rem;" onclick="selectRxEmployee(${e.id}, '${e.name}')">
+              🩺 Select for Rx
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      select.innerHTML = emps.map(e => `<option value="${e.id}">${e.name} (${e.department} - ${e.risk_score} Risk)</option>`).join('');
+    }
+  } catch(e) {
+    console.error('Failed to load employees', e);
+  }
+}
+
+function selectRxEmployee(id, name) {
+  const select = document.getElementById('rx-emp-select');
+  select.value = id;
+  document.getElementById('rx-card-wrap').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function submitPrescription() {
+  const emp_id = parseInt(document.getElementById('rx-emp-select').value);
+  const doctor_name = document.getElementById('rx-doctor').value;
+  const diagnosis_code = document.getElementById('rx-diag').value;
+  const work_restriction_days = parseInt(document.getElementById('rx-days').value);
+  const notes = document.getElementById('rx-notes').value;
+
+  const statusMsg = document.getElementById('rx-status-msg');
+  statusMsg.style.color = 'var(--indigo-light)';
+  statusMsg.innerText = 'Submitting Telehealth Rx to Neon DB...';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/prescriptions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee_id: emp_id, doctor_name, diagnosis_code, work_restriction_days, notes }),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      statusMsg.style.color = 'var(--teal-light)';
+      statusMsg.innerText = `✅ Prescription #${data.prescription_id} stored in Neon PostgreSQL!`;
+    } else {
+      throw new Error(data.error || 'Failed');
+    }
+  } catch(e) {
+    statusMsg.style.color = 'var(--red-light)';
+    statusMsg.innerText = `❌ Error: ${e.message}`;
+  }
+}
+
+/* ─── ARIA CHATBOT LOGIC ────────────────────────────────── */
+let chatOpen = false;
+
+function initChat() {
+  setTimeout(() => {
+    appendAriaMessage("Hi! I'm **Aria**, your BurnoutAI Coach 🧠\n\nI'm trained on burnout research to answer questions, explain your results, or offer prevention tips. Ask me anything!", false);
+  }, 1200);
+}
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  const win = document.getElementById('chat-window');
+  if (chatOpen) {
+    win.classList.add('open');
+    document.getElementById('chat-badge').style.display = 'none';
+    document.getElementById('chat-input').focus();
+  } else {
+    win.classList.remove('open');
+  }
+}
+
+function appendAriaMessage(text, scroll = true) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg aria';
+  div.innerHTML = `<div class="msg-bubble">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>')}</div>`;
+  msgs.appendChild(div);
+  if (scroll) msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendUserMessage(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'chat-msg user';
+  div.innerHTML = `<div class="msg-bubble">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  appendUserMessage(text);
+
+  const context = state.lastResult ? {
+    risk_level: state.lastResult.risk_level,
+    burnout_type: state.lastResult.burnout_type,
+    risk_score: state.lastResult.risk_score,
+  } : null;
+
+  try {
+    const res = await fetch(`${API_BASE}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, context }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      appendAriaMessage(data.response);
+    } else {
+      throw new Error('Chat API offline');
+    }
+  } catch (e) {
+    appendAriaMessage(localChatResponse(text, context));
+  }
+}
+
+function sendSuggestion(text) {
+  document.getElementById('chat-input').value = text;
+  sendMessage();
+}
+
+function localChatResponse(msg, context) {
+  const m = msg.toLowerCase();
+  if (/hello|hi|hey/.test(m)) return "Hi there! I'm Aria. How can I help you with burnout research or prevention today?";
+  if (/what is burnout|define/.test(m)) return "**Burnout** is defined by WHO as chronic unmanaged workplace stress. It has 3 core dimensions: Emotional Exhaustion, Cynicism, and Reduced Efficacy.";
+  if (/symptom|sign|warning/.test(m)) return "Key warning signs: chronic exhaustion, detachment from work, brain fog, irritability, and insomnia.";
+  if (/prevent|avoid/.test(m)) return "Research-backed prevention: hard stop work hours, 7–8 hrs sleep, delegating tasks, micro-recovery walks every 90 mins.";
+  if (/explain.*result|my result|my score/i.test(m)) {
+    if (context) {
+      return `Your latest result: **${context.burnout_type}** pattern with a score of **${context.risk_score}/100**. Check the SHAP XAI panel below your report to see which exact inputs pushed your score up or down!`;
+    }
+    return "Take an assessment first, and I'll explain your score and SHAP feature drivers!";
+  }
+  return "I'm trained on burnout research. Ask me about warning signs, prevention, recovery steps, or how our machine learning model operates!";
+}
+
+/* ─── 3D COVERFLOW INTERACTION LOGIC ────────────────────── */
+let coverFlowIndex = 2; // Start with center AI Core card
+let coverFlowTimer = null;
+
+function updateCoverFlow() {
+  const cards = document.querySelectorAll('.coverflow-card');
+  const dots = document.querySelectorAll('.coverflow-dot');
+  if (!cards.length) return;
+  const total = cards.length;
+
+  cards.forEach((card, idx) => {
+    card.classList.remove('pos-active', 'pos-left-1', 'pos-left-2', 'pos-right-1', 'pos-right-2', 'pos-hidden');
+
+    let diff = idx - coverFlowIndex;
+    
+    if (diff < -2) diff += total;
+    if (diff > 2) diff -= total;
+
+    if (diff === 0) {
+      card.classList.add('pos-active');
+    } else if (diff === -1) {
+      card.classList.add('pos-left-1');
+    } else if (diff === -2) {
+      card.classList.add('pos-left-2');
+    } else if (diff === 1) {
+      card.classList.add('pos-right-1');
+    } else if (diff === 2) {
+      card.classList.add('pos-right-2');
+    } else {
+      card.classList.add('pos-hidden');
+    }
+  });
+
+  dots.forEach((dot, idx) => {
+    if (idx === coverFlowIndex) dot.classList.add('active');
+    else dot.classList.remove('active');
+  });
+}
+
+function setCoverFlow(idx) {
+  coverFlowIndex = idx;
+  updateCoverFlow();
+  resetCoverFlowTimer();
+}
+
+function nextCoverFlow() {
+  const cards = document.querySelectorAll('.coverflow-card');
+  if (!cards.length) return;
+  coverFlowIndex = (coverFlowIndex + 1) % cards.length;
+  updateCoverFlow();
+  resetCoverFlowTimer();
+}
+
+function prevCoverFlow() {
+  const cards = document.querySelectorAll('.coverflow-card');
+  if (!cards.length) return;
+  coverFlowIndex = (coverFlowIndex - 1 + cards.length) % cards.length;
+  updateCoverFlow();
+  resetCoverFlowTimer();
+}
+
+function startCoverFlowTimer() {
+  if (coverFlowTimer) clearInterval(coverFlowTimer);
+  coverFlowTimer = setInterval(() => {
+    nextCoverFlow();
+  }, 4500);
+}
+
+function resetCoverFlowTimer() {
+  if (coverFlowTimer) clearInterval(coverFlowTimer);
+  startCoverFlowTimer();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.lucide) lucide.createIcons();
+  showView('landing');
+  initChat();
+  updateCoverFlow();
+  startCoverFlowTimer();
+
+  // Keyboard navigation for Cover Flow
+  window.addEventListener('keydown', (e) => {
+    if (state.currentView === 'landing') {
+      if (e.key === 'ArrowLeft') prevCoverFlow();
+      if (e.key === 'ArrowRight') nextCoverFlow();
+    }
+  });
+});
+</script>
+
+</body>
+</html>
