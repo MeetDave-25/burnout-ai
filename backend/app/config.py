@@ -19,10 +19,18 @@ def _csv(value: str) -> list[str]:
     return [v.strip() for v in value.split(",") if v.strip()]
 
 
+def normalize_database_url(url: str) -> str:
+    """Accept every Postgres URL style providers hand out (postgres://, postgresql+psycopg://, postgresql+asyncpg://…)
+    and use the installed psycopg2 driver."""
+    url = url.strip().strip('"').strip("'")
+    for prefix in ("postgres://", "postgresql+psycopg://", "postgresql+psycopg2://", "postgresql+asyncpg://", "postgresql+pg8000://"):
+        if url.startswith(prefix):
+            return "postgresql://" + url[len(prefix):]
+    return url
+
+
 def _database_url() -> str:
-    url = _env("DATABASE_URL", f"sqlite:///{(PROJECT_ROOT / 'burnout.db').as_posix()}")
-    # Some hosts hand out postgres://…; SQLAlchemy needs postgresql://…
-    return "postgresql://" + url[len("postgres://"):] if url.startswith("postgres://") else url
+    return normalize_database_url(_env("DATABASE_URL", f"sqlite:///{(PROJECT_ROOT / 'burnout.db').as_posix()}"))
 
 
 DEV_SECRET = "dev-only-insecure-secret-change-me"

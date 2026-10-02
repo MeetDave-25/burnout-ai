@@ -55,3 +55,15 @@ def test_stable_and_improving():
     assert forecast(_points([50, 51, 49, 50, 50])).status == "stable"
     improving = forecast(_points([70, 66, 62, 58]))
     assert improving.status == "improving" and not improving.early_warning
+
+
+def test_database_url_formats_from_hosting_providers():
+    from app.config import normalize_database_url as n
+
+    want = "postgresql://u:p@ep-x.neon.tech/db?sslmode=require"
+    for given in ("postgresql+psycopg://u:p@ep-x.neon.tech/db?sslmode=require",
+                  "postgres://u:p@ep-x.neon.tech/db?sslmode=require",
+                  '"postgresql://u:p@ep-x.neon.tech/db?sslmode=require"',
+                  "postgresql+asyncpg://u:p@ep-x.neon.tech/db?sslmode=require"):
+        assert n(given) == want
+    assert n("sqlite:///x.db") == "sqlite:///x.db"
