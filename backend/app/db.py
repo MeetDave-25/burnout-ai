@@ -1,16 +1,23 @@
 """Database models and session handling (SQLite locally, PostgreSQL in production)."""
 
+import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint, create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
 from .config import settings
 
+_url = make_url(settings.database_url)
+logging.getLogger("uvicorn.error").info(
+    "Database: %s on %s/%s", _url.drivername, _url.host or "local file", _url.database)  # never logs the password
+
 engine = create_engine(
-    settings.database_url,
+    _url,
     pool_pre_ping=True,
-    connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
+    pool_recycle=300,  # hosted Postgres (e.g. Neon) closes idle connections
+    connect_args={"check_same_thread": False} if _url.drivername.startswith("sqlite") else {},
 )
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
