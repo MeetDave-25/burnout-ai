@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { isAdmin, useAuth } from '../lib/auth'
 import { useTheme } from '../lib/hooks'
 import { SITE } from '../lib/site'
+import { PORTFOLIO } from './IntroReveal'
 
 /** Site-wide brutalist navigation + footer. */
 
@@ -129,10 +130,28 @@ export function Footer() {
           <div className="b-mono mt-6">Risk assessment, not diagnosis.</div>
         </div>
       </div>
-      <div className="b-mono flex flex-wrap justify-between gap-3 border-t-2 border-line px-6 py-4 text-ink-3">
-        <span>© {new Date().getFullYear()} {SITE.company}</span>
-        <span>If you’re struggling, talk to someone today.</span>
+      <div className="grid border-t-2 border-line md:grid-cols-[1fr_auto_1fr]">
+        <span className="b-mono flex items-center px-6 py-4 text-ink-3">© {new Date().getFullYear()} {SITE.company}</span>
+        <MadeBy className="border-line max-md:border-y-2 md:border-x-2" />
+        <span className="b-mono flex items-center px-6 py-4 text-ink-3 md:justify-end">If you’re struggling, talk to someone today.</span>
       </div>
     </footer>
+  )
+}
+
+/** "Made by Meet G. Dave" credit, linking to the portfolio. Shown on every page. */
+export function MadeBy({ className = '', compact = false }: { className?: string; compact?: boolean }) {
+  return (
+    <a
+      href={PORTFOLIO}
+      target="_blank"
+      rel="noopener"
+      className={`group flex items-center justify-center gap-2 px-6 font-mono text-[11px] uppercase tracking-[0.16em] transition-colors hover:bg-hot hover:text-[#0b0b0b] ${compact ? 'py-2' : 'py-4'} ${className}`}
+    >
+      <span className="text-ink-3 group-hover:text-[#0b0b0b]">Made by</span>
+      <span className="b-display text-base normal-case tracking-[0.06em] text-ink group-hover:text-[#0b0b0b]">Meet G. Dave</span>
+      <span aria-hidden className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5">↗</span>
+      <span className="sr-only">(opens portfolio in a new tab)</span>
+    </a>
   )
 }

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { MadeBy } from '../components/Chrome'
 import { LoadGauge } from '../components/LoadGauge'
 import { ErrorNote, Notice, Spinner } from '../components/ui'
 import { api, type DailyKey, type Drivers, type Question } from '../lib/api'
@@ -152,6 +153,7 @@ export default function CheckIn() {
             <div className="b-display text-[clamp(3.5rem,8vw,7rem)] leading-[0.8]">{answeredDaily ? Math.round(live) : '—'}</div>
             <div className="b-mono mt-2 text-ink-3">{answeredDaily ? 'live estimate' : 'answer to see it move'}</div>
           </div>
+          <MadeBy compact className="mt-auto border-2 border-line max-md:hidden" />
         </aside>
       </div>
     </div>

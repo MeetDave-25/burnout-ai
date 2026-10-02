@@ -1,6 +1,7 @@
 import { useReducedMotion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import { FreightScene, type Box } from '../landing/FreightScene'
+import { IntroReveal, useIntro } from '../components/IntroReveal'
 import { HeroDrop } from '../landing/HeroDrop'
 import { WarningScene } from '../landing/WarningScene'
 import { ZipScene } from '../landing/ZipScene'
@@ -18,9 +19,12 @@ const TICKER = ['Sleep 5.5h +6.1', 'Workload 5/5 +5.0', 'Late nights +4.2', "Can
 
 export default function Landing() {
   const reduce = useReducedMotion()
+  const intro = useIntro()
   return (
     <div className="story-light">
-      <HeroDrop />
+      <IntroReveal playing={intro.playing} onSkip={intro.skip} />
+      {/* remount after the intro so the headline's entrance plays in view */}
+      <HeroDrop key={intro.playing ? 'behind-intro' : 'shown'} />
       <Index />
       <Ticker />
       {reduce ? (
