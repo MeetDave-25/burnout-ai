@@ -67,3 +67,19 @@ def test_database_url_formats_from_hosting_providers():
                   "postgresql+asyncpg://u:p@ep-x.neon.tech/db?sslmode=require"):
         assert n(given) == want
     assert n("sqlite:///x.db") == "sqlite:///x.db"
+
+
+def test_migrations_refuse_a_database_from_another_app(tmp_path, monkeypatch):
+    import pytest
+    from sqlalchemy import create_engine, text
+
+    from app import migrate
+
+    eng = create_engine(f"sqlite:///{(tmp_path / 'foreign.db').as_posix()}")
+    with eng.begin() as c:  # an old app's "users" table with different columns
+        c.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT)"))
+    monkeypatch.setattr(migrate, "engine", eng)
+    with pytest.raises(migrate.SchemaMismatch, match="users"):
+        migrate.schema_problems() and migrate._fail(migrate.schema_problems())
+    assert any("users" in p for p in migrate.schema_problems())
+    assert any("rate_events" in p for p in migrate.schema_problems())
